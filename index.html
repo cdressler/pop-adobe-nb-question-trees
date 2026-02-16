@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>POP × Adobe Experience Cloud — Sales Question Trees</title>
+<style>
+  :root {
+    --pop-red: #E63946;
+    --pop-dark: #1D1D1D;
+    --pop-gray: #F8F8F8;
+    --pop-mid: #6B7280;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--pop-gray); color: var(--pop-dark); line-height: 1.6; }
+  .header { background: var(--pop-dark); color: #fff; padding: 48px 40px 40px; text-align: center; }
+  .header h1 { font-size: 32px; font-weight: 700; letter-spacing: -0.5px; }
+  .header .subtitle { color: #aaa; font-size: 15px; margin-top: 6px; }
+  .header .pop-badge { display: inline-block; background: var(--pop-red); color: #fff; padding: 6px 18px; border-radius: 20px; font-size: 12px; font-weight: 700; margin-top: 16px; letter-spacing: 1px; text-transform: uppercase; }
+  .intro { max-width: 800px; margin: 32px auto 0; padding: 0 24px; text-align: center; }
+  .intro p { color: var(--pop-mid); font-size: 15px; line-height: 1.7; }
+  .grid { max-width: 960px; margin: 36px auto 60px; padding: 0 24px; display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
+  .card { background: #fff; border: 1px solid #E5E7EB; border-radius: 12px; padding: 28px 24px; text-decoration: none; color: inherit; transition: all 0.2s; display: flex; flex-direction: column; }
+  .card:hover { box-shadow: 0 4px 20px rgba(0,0,0,0.08); transform: translateY(-2px); border-color: var(--pop-red); }
+  .card .badge { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 10px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 14px; align-self: flex-start; }
+  .badge.data { background: #DBEAFE; color: #1D4ED8; }
+  .badge.activation { background: #D1FAE5; color: #065F46; }
+  .badge.orchestration { background: #E0E7FF; color: #4338CA; }
+  .badge.analytics { background: #FEF3C7; color: #92400E; }
+  .badge.personalization { background: #FCE7F3; color: #9D174D; }
+  .badge.campaign { background: #FEE2E2; color: #B91C1C; }
+  .badge.b2b { background: #F3E8FF; color: #6B21A8; }
+  .card h2 { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
+  .card p { font-size: 13px; color: var(--pop-mid); flex: 1; }
+  .card .meta { margin-top: 16px; font-size: 12px; color: #9CA3AF; display: flex; align-items: center; gap: 6px; }
+  .card .meta svg { width: 14px; height: 14px; }
+  .footer { text-align: center; padding: 24px; color: #9CA3AF; font-size: 12px; border-top: 1px solid #E5E7EB; }
+  .how-to { max-width: 800px; margin: 0 auto 32px; padding: 0 24px; }
+  .how-to-box { background: #fff; border: 1px solid #E5E7EB; border-radius: 12px; padding: 24px; }
+  .how-to-box h3 { font-size: 15px; font-weight: 700; margin-bottom: 10px; }
+  .how-to-box p { font-size: 13px; color: var(--pop-mid); margin-bottom: 6px; }
+  .legend { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 12px; }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--pop-mid); }
+  .legend-dot { width: 10px; height: 10px; border-radius: 50%; }
+  .legend-dot.green { background: #059669; }
+  .legend-dot.amber { background: #D97706; }
+  .legend-dot.blue { background: #2563EB; }
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>Adobe Experience Cloud</h1>
+  <div class="subtitle">Sales Question Trees — Conversation Guides for the POP New Business Team</div>
+  <span class="pop-badge">POP × Adobe Partnership</span>
+</div>
+
+<div class="intro">
+  <p>Each question tree below covers a specific Adobe Experience Cloud product. Click any card to open an interactive guide with common client questions, recommended responses, conversation redirects, and POP value positioning. Use these before or during prospect conversations to navigate technical and business discussions with confidence.</p>
+</div>
+
+<div class="how-to">
+  <div class="how-to-box">
+    <h3>How to Use These Guides</h3>
+    <p>Each question tree contains root-level questions (things a prospect is likely to ask) with 1–2 levels of follow-up questions beneath them. For every question you'll find three types of guidance:</p>
+    <div class="legend">
+      <div class="legend-item"><div class="legend-dot green"></div> Recommended Response — what to say</div>
+      <div class="legend-item"><div class="legend-dot amber"></div> Redirect — how to steer the conversation toward discovery</div>
+      <div class="legend-item"><div class="legend-dot blue"></div> POP's Value — how to position our services</div>
+    </div>
+  </div>
+</div>
+
+<div class="grid">
+
+  <a href="aep-question-tree.html" class="card">
+    <span class="badge data">Data Foundation</span>
+    <h2>Adobe Experience Platform</h2>
+    <p>The data layer powering the entire Adobe ecosystem. Covers XDM schemas, data ingestion, identity resolution, real-time profiles, and governance.</p>
+    <div class="meta">
+      <svg viewBox="0 0 20 20" fill="currentColor"><path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/><path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z"/></svg>
+      6 root questions · 2 levels deep
+    </div>
+  </a>
+
+  <a href="rtcdp-question-tree.html" class="card">
+    <span class="badge activation">Audience Activation</span>
+    <h2>Real-Time CDP</h2>
+    <p>Unified customer profiles, real-time segmentation, and 600+ activation destinations. Covers DMP migration, privacy, and competitive positioning.</p>
+    <div class="meta">
+      <svg viewBox="0 0 20 20" fill="currentColor"><path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/><path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z"/></svg>
+      6 root questions · 2 levels deep
+    </div>
+  </a>
+
+  <a href="ajo-question-tree.html" class="card">
+    <span class="badge orchestration">Journey Orchestration</span>
+    <h2>Journey Optimizer (AJO)</h2>
+    <p>Omnichannel journey orchestration with real-time triggers, offer decisioning, and AI-powered content. Covers ESP migration and ecosystem integration.</p>
+    <div class="meta">
+      <svg viewBox="0 0 20 20" fill="currentColor"><path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/><path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z"/></svg>
+      6 root questions · 2 levels deep
+    </div>
+  </a>
+
+  <a href="cja-question-tree.html" class="card">
+    <span class="badge analytics">Cross-Channel Analytics</span>
+    <h2>Customer Journey Analytics</h2>
+    <p>Cross-channel analysis, attribution modeling, AI-driven insights, and audience publishing. Covers migration from Adobe Analytics and BI tool comparison.</p>
+    <div class="meta">
+      <svg viewBox="0 0 20 20" fill="currentColor"><path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/><path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z"/></svg>
+      6 root questions · 2 levels deep
+    </div>
+  </a>
+
+  <a href="target-question-tree.html" class="card">
+    <span class="badge personalization">Testing & Personalization</span>
+    <h2>Adobe Target</h2>
+    <p>A/B testing, AI-driven personalization, recommendations, and edge decisioning. Covers testing program strategy and competitive alternatives.</p>
+    <div class="meta">
+      <svg viewBox="0 0 20 20" fill="currentColor"><path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/><path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z"/></svg>
+      6 root questions · 2 levels deep
+    </div>
+  </a>
+
+  <a href="analytics-question-tree.html" class="card">
+    <span class="badge analytics">Digital Analytics</span>
+    <h2>Adobe Analytics</h2>
+    <p>Analysis Workspace, advanced segmentation, AI-powered insights, and data collection strategy. Covers GA4 comparison and measurement frameworks.</p>
+    <div class="meta">
+      <svg viewBox="0 0 20 20" fill="currentColor"><path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/><path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z"/></svg>
+      6 root questions · 2 levels deep
+    </div>
+  </a>
+
+  <a href="campaign-question-tree.html" class="card">
+    <span class="badge campaign">Campaign Management</span>
+    <h2>Adobe Campaign</h2>
+    <p>Cross-channel campaign orchestration, visual workflows, deliverability management, and AI content generation. Covers SFMC comparison and migration.</p>
+    <div class="meta">
+      <svg viewBox="0 0 20 20" fill="currentColor"><path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/><path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z"/></svg>
+      6 root questions · 2 levels deep
+    </div>
+  </a>
+
+  <a href="marketo-question-tree.html" class="card">
+    <span class="badge b2b">B2B Marketing Automation</span>
+    <h2>Marketo Engage</h2>
+    <p>Lead scoring, ABM, revenue cycle analytics, Salesforce integration, and Dynamic Chat. Covers HubSpot/Pardot comparison and migration strategy.</p>
+    <div class="meta">
+      <svg viewBox="0 0 20 20" fill="currentColor"><path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/><path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z"/></svg>
+      6 root questions · 2 levels deep
+    </div>
+  </a>
+
+</div>
+
+<div class="footer">
+  POP × Adobe Experience Cloud — Sales Enablement Materials — Confidential
+</div>
+</body>
+</html>

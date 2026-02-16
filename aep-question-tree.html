@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>POP × Adobe Experience Platform (AEP) — Question Tree</title>
+<style>
+  :root {
+    --pop-red: #E63946;
+    --pop-dark: #1D1D1D;
+    --pop-gray: #F8F8F8;
+    --pop-mid: #6B7280;
+    --pop-blue: #2563EB;
+    --pop-green: #059669;
+    --pop-amber: #D97706;
+    --radius: 10px;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--pop-gray); color: var(--pop-dark); line-height: 1.6; }
+  .header { background: var(--pop-dark); color: #fff; padding: 32px 40px; }
+  .header h1 { font-size: 28px; font-weight: 700; }
+  .header .subtitle { color: #aaa; font-size: 14px; margin-top: 4px; }
+  .header .product-badge { display: inline-block; background: var(--pop-red); color: #fff; padding: 4px 14px; border-radius: 20px; font-size: 12px; font-weight: 600; margin-top: 12px; letter-spacing: 0.5px; }
+  .intro { max-width: 960px; margin: 24px auto; padding: 0 24px; }
+  .intro p { color: var(--pop-mid); font-size: 14px; }
+  .container { max-width: 960px; margin: 0 auto; padding: 0 24px 60px; }
+  .tree-root { margin-bottom: 20px; }
+  .question-node { border: 1px solid #E5E7EB; border-radius: var(--radius); background: #fff; margin-bottom: 12px; overflow: hidden; transition: box-shadow 0.2s; }
+  .question-node:hover { box-shadow: 0 2px 12px rgba(0,0,0,0.06); }
+  .question-header { display: flex; align-items: center; padding: 16px 20px; cursor: pointer; user-select: none; gap: 12px; }
+  .question-header .icon { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; flex-shrink: 0; }
+  .question-header .icon.client { background: #DBEAFE; color: var(--pop-blue); }
+  .question-header .icon.response { background: #D1FAE5; color: var(--pop-green); }
+  .question-header .icon.redirect { background: #FEF3C7; color: var(--pop-amber); }
+  .question-header h3 { font-size: 15px; font-weight: 600; flex: 1; }
+  .question-header .tag { font-size: 11px; padding: 2px 10px; border-radius: 12px; font-weight: 600; flex-shrink: 0; }
+  .tag.discovery { background: #DBEAFE; color: var(--pop-blue); }
+  .tag.technical { background: #E0E7FF; color: #4338CA; }
+  .tag.objection { background: #FEE2E2; color: #B91C1C; }
+  .tag.value { background: #D1FAE5; color: #065F46; }
+  .tag.competitive { background: #FEF3C7; color: #92400E; }
+  .chevron { width: 20px; height: 20px; transition: transform 0.2s; flex-shrink: 0; color: #9CA3AF; }
+  .chevron.open { transform: rotate(90deg); }
+  .question-body { display: none; padding: 0 20px 20px 60px; }
+  .question-body.open { display: block; }
+  .answer-block { background: #F9FAFB; border-left: 3px solid var(--pop-green); padding: 16px; border-radius: 0 8px 8px 0; margin-bottom: 12px; }
+  .answer-block h4 { font-size: 13px; font-weight: 700; color: var(--pop-green); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .answer-block p, .answer-block li { font-size: 14px; color: #374151; }
+  .answer-block ul { padding-left: 18px; margin-top: 6px; }
+  .answer-block li { margin-bottom: 4px; }
+  .redirect-block { background: #FFFBEB; border-left: 3px solid var(--pop-amber); padding: 16px; border-radius: 0 8px 8px 0; margin-bottom: 12px; }
+  .redirect-block h4 { font-size: 13px; font-weight: 700; color: var(--pop-amber); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .redirect-block p, .redirect-block li { font-size: 14px; color: #374151; }
+  .redirect-block ul { padding-left: 18px; margin-top: 6px; }
+  .redirect-block li { margin-bottom: 4px; }
+  .pop-value { background: #EFF6FF; border-left: 3px solid var(--pop-blue); padding: 16px; border-radius: 0 8px 8px 0; margin-bottom: 12px; }
+  .pop-value h4 { font-size: 13px; font-weight: 700; color: var(--pop-blue); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .pop-value p, .pop-value li { font-size: 14px; color: #374151; }
+  .pop-value ul { padding-left: 18px; margin-top: 6px; }
+  .pop-value li { margin-bottom: 4px; }
+  /* Sub-questions (level 2) */
+  .sub-tree { margin-top: 16px; padding-left: 0; }
+  .sub-tree .question-node { border-color: #E5E7EB; background: #FAFAFA; }
+  .sub-tree .question-header { padding: 12px 16px; }
+  .sub-tree .question-header h3 { font-size: 14px; }
+  .sub-tree .question-body { padding: 0 16px 16px 52px; }
+  .nav-back { display: inline-block; margin: 24px 0 0; padding: 8px 20px; background: var(--pop-dark); color: #fff; text-decoration: none; border-radius: 6px; font-size: 13px; font-weight: 600; }
+  .nav-back:hover { background: #333; }
+  .search-bar { margin: 24px auto 0; max-width: 960px; padding: 0 24px; }
+  .search-bar input { width: 100%; padding: 12px 16px; border: 1px solid #D1D5DB; border-radius: 8px; font-size: 14px; outline: none; }
+  .search-bar input:focus { border-color: var(--pop-red); box-shadow: 0 0 0 3px rgba(230,57,70,0.1); }
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>Adobe Experience Platform (AEP)</h1>
+  <div class="subtitle">POP Sales Question Tree — Conversation Guide</div>
+  <span class="product-badge">DATA FOUNDATION</span>
+</div>
+<div class="search-bar"><input type="text" id="search" placeholder="Search questions…" oninput="filterQuestions(this.value)"></div>
+<div class="intro"><p style="margin-top:16px">Use this guide when a prospect asks about Adobe Experience Platform. Each question includes a recommended response and conversation redirects to surface POP's value. Click any question to expand.</p></div>
+<div class="container">
+
+<!-- Q1 -->
+<div class="tree-root" data-q>
+<div class="question-node">
+  <div class="question-header" onclick="toggle(this)">
+    <div class="icon client">Q</div>
+    <h3>"What exactly is Adobe Experience Platform and why do we need it?"</h3>
+    <span class="tag discovery">Discovery</span>
+    <svg class="chevron" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z"/></svg>
+  </div>
+  <div class="question-body">
+    <div class="answer-block">
+      <h4>Recommended Response</h4>
+      <p>AEP is Adobe's data foundation — it ingests data from every channel and system you have (web, mobile, CRM, POS, call center, IoT), unifies it into a single real-time customer profile using Adobe's Experience Data Model (XDM), and makes that profile available to every Experience Cloud application. Think of it as the central nervous system that powers personalization, analytics, and orchestration across the entire Adobe stack.</p>
+    </div>
+    <div class="redirect-block">
+      <h4>Redirect the Conversation</h4>
+      <p>"Before we dive deeper into AEP specifically, it might help to understand where your data currently lives and how connected those sources are today. Can you walk me through your current data architecture and the biggest pain points your teams face when trying to build a single view of the customer?"</p>
+    </div>
+    <div class="pop-value">
+      <h4>POP's Value</h4>
+      <p>POP's <strong>Launchpad for AEP</strong> accelerator gives clients a pre-built schema and data ingestion framework that cuts typical implementation time by 40–60%. We start with a Platform Assessment that maps your existing data landscape, identifies gaps, and produces a phased implementation roadmap — so you're not paying for a 12-month boil-the-ocean project when you could be live in 8–10 weeks.</p>
+    </div>
+
+    <!-- Sub-questions -->
+    <div class="sub-tree">
+      <div class="question-node">
+        <div class="question-header" onclick="toggle(this)">
+          <div class="icon client">Q</div>
+          <h3>"How is AEP different from a traditional data warehouse or CDP?"</h3>
+          <span class="tag technical">Technical</span>
+          <svg class="chevron" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z"/></svg>
+        </div>
+        <div class="question-body">
+          <div class="answer-block">
+            <h4>Recommended Response</h4>
+            <p>A data warehouse stores historical data for reporting — it's built for looking backward. A standalone CDP typically focuses on audience segmentation and activation. AEP does both and more: it processes data in real time (milliseconds, not hours), uses a standardized schema (XDM) so every application speaks the same language, and it includes built-in AI/ML services (Adobe Sensei) for predictions like propensity scores, content recommendations, and anomaly detection. It's the platform that Real-Time CDP, Journey Optimizer, and CJA are all built on.</p>
+          </div>
+          <div class="redirect-block">
+            <h4>Redirect the Conversation</h4>
+            <p>"That's actually a great distinction to make — what tools are you using today for customer data management? Are you running a separate CDP, or are you stitching things together with your data warehouse and marketing tools?"</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="question-node">
+        <div class="question-header" onclick="toggle(this)">
+          <div class="icon client">Q</div>
+          <h3>"What kind of data can AEP ingest?"</h3>
+          <span class="tag technical">Technical</span>
+          <svg class="chevron" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z"/></svg>
+        </div>
+        <div class="question-body">
+          <div class="answer-block">
+            <h4>Recommended Response</h4>
+            <p>Virtually anything — behavioral data (web/mobile clicks, page views), transactional data (purchases, returns), CRM records, loyalty program data, offline interactions (call center, in-store POS), IoT signals, and second/third-party data. AEP uses batch ingestion for large historical loads and streaming ingestion for real-time behavioral data. All data conforms to XDM schemas, which means once it's in the platform, it's immediately usable by every downstream application.</p>
+          </div>
+          <div class="pop-value">
+            <h4>POP's Value</h4>
+            <p>POP's data architecture team specializes in designing XDM schemas that balance flexibility with performance. We've built reusable schema templates for retail, financial services, and media/entertainment verticals — so your team isn't starting from a blank canvas.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="question-node">
+        <div class="question-header" onclick="toggle(this)">
+          <div class="icon client">Q</div>
+          <h3>"How long does an AEP implementation typically take?"</h3>
+          <span class="tag objection">Objection</span>
+          <svg class="chevron" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z"/></svg>
+        </div>
+        <div class="question-body">
+          <div class="answer-block">
+            <h4>Recommended Response</h4>
+            <p>It varies by complexity, but a realistic timeline is 8–16 weeks for an initial deployment that covers your highest-priority data sources and use cases. The key is taking a phased approach: start with your most impactful data sources (usually web analytics + CRM), prove value quickly, then expand. Trying to boil the ocean on day one is the #1 reason AEP projects stall.</p>
+          </div>
+          <div class="redirect-block">
+            <h4>Redirect the Conversation</h4>
+            <p>"What would success look like for you in the first 90 days? If we can identify two or three high-value use cases, we can scope an initial deployment that delivers measurable results quickly while building the foundation for future phases."</p>
+          </div>
+          <div class="pop-value">
+            <h4>POP's Value</h4>
+            <p>POP's Accelerated Implementation model uses our Launchpad accelerators to compress timelines. We've delivered AEP foundations in as few as 6 weeks for clients with well-defined data sources. Our phased approach means you start seeing value from unified profiles before the full implementation is complete.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- Q2 -->
+<div class="tree-root" data-q>
+<div class="question-node">
+  <div class="question-header" onclick="toggle(this)">
+    <div class="icon client">Q</div>
+    <h3>"We already have a lot of data — what's the ROI of putting it into AEP?"</h3>
+    <span class="tag value">Value</span>
+    <svg class="chevron" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z"/></svg>
+  </div>
+  <div class="question-body">
+    <div class="answer-block">
+      <h4>Recommended Response</h4>
+      <p>Having data isn't the challenge — activating it in real time across every customer touchpoint is. AEP's ROI comes from three areas: (1) reducing time-to-insight by unifying data that currently lives in silos, (2) enabling real-time personalization that drives measurable conversion lifts and revenue, and (3) future-proofing your stack by building on a platform that powers every Adobe application you adopt. Clients typically see 15–30% improvements in campaign performance within the first 6 months once unified profiles are feeding their activation tools.</p>
+    </div>
+    <div class="redirect-block">
+      <h4>Redirect the Conversation</h4>
+      <p>"Let me ask this differently — when your marketing team wants to run a personalized campaign today, how many systems do they have to touch and how long does that take end-to-end? That gap between 'we have the data' and 'we can act on the data' is where the ROI lives."</p>
+    </div>
+
+    <div class="sub-tree">
+      <div class="question-node">
+        <div class="question-header" onclick="toggle(this)">
+          <div class="icon client">Q</div>
+          <h3>"Can you share specific results from other AEP implementations?"</h3>
+          <span class="tag value">Value</span>
+          <svg class="chevron" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z"/></svg>
+        </div>
+        <div class="question-body">
+          <div class="answer-block">
+            <h4>Recommended Response</h4>
+            <p>Absolutely — while specific client details are confidential, we've seen consistent patterns: a national retailer reduced their audience build time from 3 days to under 30 minutes after unifying web, POS, and loyalty data in AEP. A financial services client saw a 22% lift in cross-sell conversion by activating real-time propensity scores through Real-Time CDP. The common thread is that AEP doesn't just store data better — it makes data actionable faster.</p>
+          </div>
+          <div class="pop-value">
+            <h4>POP's Value</h4>
+            <p>POP can provide references and case studies specific to your industry. We also run a complimentary Platform Assessment that identifies your top 3–5 use cases and models the expected impact — so you have a data-driven business case before committing to implementation.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="question-node">
+        <div class="question-header" onclick="toggle(this)">
+          <div class="icon client">Q</div>
+          <h3>"What about data governance and privacy — is our data safe?"</h3>
+          <span class="tag technical">Technical</span>
+          <svg class="chevron" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z"/></svg>
+        </div>
+        <div class="question-body">
+          <div class="answer-block">
+            <h4>Recommended Response</h4>
+            <p>AEP has enterprise-grade data governance built in — not bolted on. The Data Usage Labeling and Enforcement (DULE) framework lets you tag data at the field level (e.g., "this is PII," "this can't be used for third-party activation") and those labels are enforced automatically across every application. It supports GDPR, CCPA, and other privacy regulations natively. You can also set up consent management policies that automatically suppress users who haven't opted in.</p>
+          </div>
+          <div class="redirect-block">
+            <h4>Redirect the Conversation</h4>
+            <p>"Data governance is actually one of the most underappreciated benefits of AEP. What does your current consent management and data governance process look like? Are you confident that your marketing teams can't accidentally use restricted data in campaigns today?"</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- Q3 -->
+<div class="tree-root" data-q>
+<div class="question-node">
+  <div class="question-header" onclick="toggle(this)">
+    <div class="icon client">Q</div>
+    <h3>"We're concerned about implementation complexity — we've heard AEP is hard."</h3>
+    <span class="tag objection">Objection</span>
+    <svg class="chevron" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z"/></svg>
+  </div>
+  <div class="question-body">
+    <div class="answer-block">
+      <h4>Recommended Response</h4>
+      <p>AEP is a powerful platform, and with power comes complexity — that's a fair concern. But the complexity isn't inherent to the technology; it's usually a reflection of the data landscape underneath. Companies with clean, well-documented data sources have smoother implementations. The key is having a partner who's done this before and knows which corners to cut and which to invest in. That's where POP comes in.</p>
+    </div>
+    <div class="redirect-block">
+      <h4>Redirect the Conversation</h4>
+      <p>"Can you tell me more about what you've heard? Was the concern about the technical implementation itself, the organizational change management, or the ongoing operations? Each one has a different solution."</p>
+    </div>
+    <div class="pop-value">
+      <h4>POP's Value</h4>
+      <p>POP de-risks AEP implementations in three ways: (1) our Launchpad accelerators include pre-built schemas, ingestion connectors, and governance frameworks that eliminate months of custom work; (2) our phased approach means you're never more than 4–6 weeks from a visible milestone; and (3) our team includes certified AEP architects who've completed dozens of implementations across industries. We also offer a managed Optimization Program for ongoing support post-launch.</p>
+    </div>
+
+    <div class="sub-tree">
+      <div class="question-node">
+        <div class="question-header" onclick="toggle(this)">
+          <div class="icon client">Q</div>
+          <h3>"Do we need to hire dedicated AEP resources internally?"</h3>
+          <span class="tag objection">Objection</span>
+          <svg class="chevron" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z"/></svg>
+        </div>
+        <div class="question-body">
+          <div class="answer-block">
+            <h4>Recommended Response</h4>
+            <p>Long-term, you'll want at least one or two internal champions who understand the platform. But you don't need to staff up before you start. POP's engagement model includes knowledge transfer and enablement as a core deliverable — we build your team's skills as we build the platform. Many of our clients start with POP handling 80% of the work and gradually shift to 80% internal over 6–12 months.</p>
+          </div>
+          <div class="pop-value">
+            <h4>POP's Value</h4>
+            <p>POP's Training & Enablement program includes hands-on workshops, documentation tailored to your implementation, and structured knowledge transfer milestones. We don't just build it and leave — we make sure your team can run it.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="question-node">
+        <div class="question-header" onclick="toggle(this)">
+          <div class="icon client">Q</div>
+          <h3>"What if we already have some Adobe products but haven't adopted AEP yet?"</h3>
+          <span class="tag discovery">Discovery</span>
+          <svg class="chevron" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z"/></svg>
+        </div>
+        <div class="question-body">
+          <div class="answer-block">
+            <h4>Recommended Response</h4>
+            <p>That's actually the most common scenario we see. Many organizations are running Adobe Analytics, Target, or Campaign independently but haven't connected them through AEP yet. The good news is that AEP is designed to amplify the products you already own — your Analytics data becomes richer when combined with CRM data in unified profiles, your Target personalization becomes smarter with real-time behavioral signals, and your Campaign audiences become more precise. AEP is the multiplier.</p>
+          </div>
+          <div class="redirect-block">
+            <h4>Redirect the Conversation</h4>
+            <p>"Which Adobe products are you running today, and what's your biggest frustration with how they work together? That'll help us identify the quickest wins from connecting them through AEP."</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- Q4 -->
+<div class="tree-root" data-q>
+<div class="question-node">
+  <div class="question-header" onclick="toggle(this)">
+    <div class="icon client">Q</div>
+    <h3>"How does AEP handle identity resolution across channels?"</h3>
+    <span class="tag technical">Technical</span>
+    <svg class="chevron" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z"/></svg>
+  </div>
+  <div class="question-body">
+    <div class="answer-block">
+      <h4>Recommended Response</h4>
+      <p>AEP uses an Identity Service that stitches together multiple identifiers — email addresses, CRM IDs, device IDs, loyalty numbers, cookies — into a single identity graph for each person. It supports both deterministic matching (same email = same person) and probabilistic matching (behavioral signals suggest these devices belong to the same person). The result is a unified profile that updates in real time as new signals come in, so you're always working with the most complete picture of each customer.</p>
+    </div>
+    <div class="redirect-block">
+      <h4>Redirect the Conversation</h4>
+      <p>"Identity resolution is often the make-or-break capability. How are you handling cross-device and cross-channel identity today? Are you seeing issues with duplicate profiles or fragmented customer views?"</p>
+    </div>
+
+    <div class="sub-tree">
+      <div class="question-node">
+        <div class="question-header" onclick="toggle(this)">
+          <div class="icon client">Q</div>
+          <h3>"What happens with identity in a cookieless future?"</h3>
+          <span class="tag technical">Technical</span>
+          <svg class="chevron" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z"/></svg>
+        </div>
+        <div class="question-body">
+          <div class="answer-block">
+            <h4>Recommended Response</h4>
+            <p>This is where AEP's first-party data strategy really shines. Because AEP is built on first-party data collection (via Web SDK and server-side APIs), it's inherently less dependent on third-party cookies. The identity graph prioritizes authenticated IDs (email, loyalty, CRM) over cookie-based identifiers. As cookies deprecate, organizations with a strong first-party data foundation in AEP will have a significant competitive advantage over those relying on third-party audience tools.</p>
+          </div>
+          <div class="pop-value">
+            <h4>POP's Value</h4>
+            <p>POP helps clients build a first-party data strategy as part of every AEP implementation. We design data collection approaches that maximize authenticated touchpoints and reduce reliance on cookies — including progressive profiling strategies, identity incentive programs, and server-side tag management.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- Q5 -->
+<div class="tree-root" data-q>
+<div class="question-node">
+  <div class="question-header" onclick="toggle(this)">
+    <div class="icon client">Q</div>
+    <h3>"What's the relationship between AEP and Real-Time CDP / Journey Optimizer / CJA?"</h3>
+    <span class="tag discovery">Discovery</span>
+    <svg class="chevron" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z"/></svg>
+  </div>
+  <div class="question-body">
+    <div class="answer-block">
+      <h4>Recommended Response</h4>
+      <p>Think of it as layers. AEP is the foundation — the data platform that ingests, unifies, and governs your data. Built on top of that foundation are three major applications: <strong>Real-Time CDP</strong> for audience segmentation and activation, <strong>Journey Optimizer</strong> for orchestrating personalized customer journeys across channels, and <strong>Customer Journey Analytics</strong> for cross-channel reporting and attribution. They all share the same data, the same profiles, and the same governance — which is what makes the Adobe ecosystem so powerful compared to stitching together point solutions.</p>
+    </div>
+    <div class="redirect-block">
+      <h4>Redirect the Conversation</h4>
+      <p>"Which of those capabilities — audience activation, journey orchestration, or cross-channel analytics — is your most pressing need right now? That'll help us figure out the right starting point and which AEP-native applications to prioritize."</p>
+    </div>
+
+    <div class="sub-tree">
+      <div class="question-node">
+        <div class="question-header" onclick="toggle(this)">
+          <div class="icon client">Q</div>
+          <h3>"Do we need to buy all of them at once?"</h3>
+          <span class="tag objection">Objection</span>
+          <svg class="chevron" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z"/></svg>
+        </div>
+        <div class="question-body">
+          <div class="answer-block">
+            <h4>Recommended Response</h4>
+            <p>No — and we'd actually advise against it. The beauty of the AEP architecture is that you can start with one application and add others over time without rearchitecting. Most clients start with Real-Time CDP (because unified profiles and audience activation provide the fastest ROI), then layer on CJA for analytics, and then Journey Optimizer for orchestration. The data foundation you build on day one supports all future expansions.</p>
+          </div>
+          <div class="pop-value">
+            <h4>POP's Value</h4>
+            <p>POP's Strategy & Planning service helps clients build a multi-phase roadmap that sequences Adobe investments based on business impact, budget, and organizational readiness. We make sure your Phase 1 architecture is designed to support Phase 2 and beyond — so you never have to re-do foundational work.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- Q6 -->
+<div class="tree-root" data-q>
+<div class="question-node">
+  <div class="question-header" onclick="toggle(this)">
+    <div class="icon client">Q</div>
+    <h3>"How does AEP compare to Salesforce Data Cloud / Google CDP?"</h3>
+    <span class="tag competitive">Competitive</span>
+    <svg class="chevron" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z"/></svg>
+  </div>
+  <div class="question-body">
+    <div class="answer-block">
+      <h4>Recommended Response</h4>
+      <p>AEP's key differentiators are: (1) it's truly real-time — profiles update in milliseconds, not minutes or hours; (2) it uses a standardized data model (XDM) that eliminates custom mapping between applications; (3) it powers a complete ecosystem of activation tools (RT-CDP, AJO, CJA, Target) that all share the same data natively; and (4) it includes built-in AI/ML capabilities via Adobe Sensei. Salesforce Data Cloud is strong if you're deeply committed to the Salesforce CRM ecosystem, and Google's offerings are strong for advertising-centric use cases — but neither offers the same depth of experience management applications built natively on the platform.</p>
+    </div>
+    <div class="redirect-block">
+      <h4>Redirect the Conversation</h4>
+      <p>"Are you evaluating other platforms? Understanding what criteria matter most to your team — real-time speed, ecosystem breadth, analytics depth, or integration with existing tools — will help us have a more productive comparison."</p>
+    </div>
+
+    <div class="sub-tree">
+      <div class="question-node">
+        <div class="question-header" onclick="toggle(this)">
+          <div class="icon client">Q</div>
+          <h3>"We're a Salesforce shop — why should we consider Adobe?"</h3>
+          <span class="tag competitive">Competitive</span>
+          <svg class="chevron" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z"/></svg>
+        </div>
+        <div class="question-body">
+          <div class="answer-block">
+            <h4>Recommended Response</h4>
+            <p>Adobe and Salesforce actually complement each other well — many of our largest clients run both. Salesforce is excellent as a CRM and sales enablement platform. Adobe excels at experience delivery — the websites, apps, emails, and personalization that your customers actually see and interact with. AEP can ingest your Salesforce data (accounts, contacts, opportunities) and combine it with behavioral and transactional data to power experiences that Salesforce alone can't deliver. Think of it as Salesforce for your sales team, Adobe for your customer experience.</p>
+          </div>
+          <div class="pop-value">
+            <h4>POP's Value</h4>
+            <p>POP has deep experience integrating Adobe and Salesforce ecosystems. We've built reusable Salesforce-to-AEP connectors and data mapping frameworks that make the two platforms work together seamlessly — so it's not an either/or decision.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+</div>
+
+<div class="container">
+  <a href="index.html" class="nav-back">← Back to All Products</a>
+</div>
+
+<script>
+function toggle(header) {
+  const body = header.nextElementSibling;
+  const chevron = header.querySelector('.chevron');
+  body.classList.toggle('open');
+  chevron.classList.toggle('open');
+}
+function filterQuestions(query) {
+  const roots = document.querySelectorAll('[data-q]');
+  const q = query.toLowerCase();
+  roots.forEach(root => {
+    const text = root.textContent.toLowerCase();
+    root.style.display = text.includes(q) ? '' : 'none';
+  });
+}
+</script>
+</body>
+</html>

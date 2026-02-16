@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>POP × Adobe Target — Question Tree</title>
+<style>
+  :root {
+    --pop-red: #E63946;
+    --pop-dark: #1D1D1D;
+    --pop-gray: #F8F8F8;
+    --pop-mid: #6B7280;
+    --pop-blue: #2563EB;
+    --pop-green: #059669;
+    --pop-amber: #D97706;
+    --radius: 10px;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--pop-gray); color: var(--pop-dark); line-height: 1.6; }
+  .header { background: var(--pop-dark); color: #fff; padding: 32px 40px; }
+  .header h1 { font-size: 28px; font-weight: 700; }
+  .header .subtitle { color: #aaa; font-size: 14px; margin-top: 4px; }
+  .header .product-badge { display: inline-block; background: var(--pop-red); color: #fff; padding: 4px 14px; border-radius: 20px; font-size: 12px; font-weight: 600; margin-top: 12px; letter-spacing: 0.5px; }
+  .intro { max-width: 960px; margin: 24px auto; padding: 0 24px; }
+  .intro p { color: var(--pop-mid); font-size: 14px; }
+  .container { max-width: 960px; margin: 0 auto; padding: 0 24px 60px; }
+  .tree-root { margin-bottom: 20px; }
+  .question-node { border: 1px solid #E5E7EB; border-radius: var(--radius); background: #fff; margin-bottom: 12px; overflow: hidden; transition: box-shadow 0.2s; }
+  .question-node:hover { box-shadow: 0 2px 12px rgba(0,0,0,0.06); }
+  .question-header { display: flex; align-items: center; padding: 16px 20px; cursor: pointer; user-select: none; gap: 12px; }
+  .question-header .icon { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; flex-shrink: 0; }
+  .question-header .icon.client { background: #DBEAFE; color: var(--pop-blue); }
+  .question-header .icon.response { background: #D1FAE5; color: var(--pop-green); }
+  .question-header .icon.redirect { background: #FEF3C7; color: var(--pop-amber); }
+  .question-header h3 { font-size: 15px; font-weight: 600; flex: 1; }
+  .question-header .tag { font-size: 11px; padding: 2px 10px; border-radius: 12px; font-weight: 600; flex-shrink: 0; }
+  .tag.discovery { background: #DBEAFE; color: var(--pop-blue); }
+  .tag.technical { background: #E0E7FF; color: #4338CA; }
+  .tag.objection { background: #FEE2E2; color: #B91C1C; }
+  .tag.value { background: #D1FAE5; color: #065F46; }
+  .tag.competitive { background: #FEF3C7; color: #92400E; }
+  .chevron { width: 20px; height: 20px; transition: transform 0.2s; flex-shrink: 0; color: #9CA3AF; }
+  .chevron.open { transform: rotate(90deg); }
+  .question-body { display: none; padding: 0 20px 20px 60px; }
+  .question-body.open { display: block; }
+  .answer-block { background: #F9FAFB; border-left: 3px solid var(--pop-green); padding: 16px; border-radius: 0 8px 8px 0; margin-bottom: 12px; }
+  .answer-block h4 { font-size: 13px; font-weight: 700; color: var(--pop-green); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .answer-block p, .answer-block li { font-size: 14px; color: #374151; }
+  .answer-block ul { padding-left: 18px; margin-top: 6px; }
+  .answer-block li { margin-bottom: 4px; }
+  .redirect-block { background: #FFFBEB; border-left: 3px solid var(--pop-amber); padding: 16px; border-radius: 0 8px 8px 0; margin-bottom: 12px; }
+  .redirect-block h4 { font-size: 13px; font-weight: 700; color: var(--pop-amber); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .redirect-block p, .redirect-block li { font-size: 14px; color: #374151; }
+  .redirect-block ul { padding-left: 18px; margin-top: 6px; }
+  .redirect-block li { margin-bottom: 4px; }
+  .pop-value { background: #EFF6FF; border-left: 3px solid var(--pop-blue); padding: 16px; border-radius: 0 8px 8px 0; margin-bottom: 12px; }
+  .pop-value h4 { font-size: 13px; font-weight: 700; color: var(--pop-blue); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .pop-value p, .pop-value li { font-size: 14px; color: #374151; }
+  .pop-value ul { padding-left: 18px; margin-top: 6px; }
+  .pop-value li { margin-bottom: 4px; }
+  /* Sub-questions (level 2) */
+  .sub-tree { margin-top: 16px; padding-left: 0; }
+  .sub-tree .question-node { border-color: #E5E7EB; background: #FAFAFA; }
+  .sub-tree .question-header { padding: 12px 16px; }
+  .sub-tree .question-header h3 { font-size: 14px; }
+  .sub-tree .question-body { padding: 0 16px 16px 52px; }
+  .nav-back { display: inline-block; margin: 24px 0 0; padding: 8px 20px; background: var(--pop-dark); color: #fff; text-decoration: none; border-radius: 6px; font-size: 13px; font-weight: 600; }
+  .nav-back:hover { background: #333; }
+  .search-bar { margin: 24px auto 0; max-width: 960px; padding: 0 24px; }
+  .search-bar input { width: 100%; padding: 12px 16px; border: 1px solid #D1D5DB; border-radius: 8px; font-size: 14px; outline: none; }
+  .search-bar input:focus { border-color: var(--pop-red); box-shadow: 0 0 0 3px rgba(230,57,70,0.1); }
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>Adobe Target</h1>
+  <div class="subtitle">POP Sales Question Tree — Conversation Guide</div>
+  <span class="product-badge">TESTING & PERSONALIZATION</span>
+</div>
+<div class="search-bar"><input type="text" id="search" placeholder="Search questions…" oninput="filterQuestions(this.value)"></div>
+<div class="intro"><p style="margin-top:16px">Use this guide when a prospect asks about Adobe Target. Each question includes a recommended response and conversation redirects to surface POP's value. Click any question to expand.</p></div>
+<div class="container">
+
+<!-- Q1 -->
+<div class="tree-root" data-q>
+<div class="question-node">
+  <div class="question-header" onclick="toggle(this)">
+    <div class="icon client">Q</div>
+    <h3>"What is Adobe Target and what can we use it for?"</h3>
+    <span class="tag discovery">Discovery</span>
+    <svg class="chevron" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z"/></svg>
+  </div>
+  <div class="question-body">
+    <div class="answer-block">
+      <h4>Recommended Response</h4>
+      <p>Adobe Target is a testing and personalization platform that helps you experiment on your website, mobile app, and other digital properties to deliver the right experience to each visitor. You can run A/B tests (test two versions of a page), multivariate tests or MVT (test multiple elements simultaneously), rule-based personalization (show different content based on visitor attributes), and use Adobe Sensei AI to automatically optimize toward your best-performing experience. The end goal is increasing conversion rates and customer lifetime value through smarter, data-driven decisions.</p>
+    </div>
+    <div class="redirect-block">
+      <h4>Redirect the Conversation</h4>
+      <p>"Many organizations run tests and personalization in silos today — maybe analytics in one tool, testing in another, personalization rules manually configured. What does your current testing and personalization workflow look like? Are you able to activate insights fast, or does it take weeks from analysis to implementation?"</p>
+    </div>
+    <div class="pop-value">
+      <h4>POP's Value</h4>
+      <p>POP's Testing & Optimization accelerator helps you establish a testing culture from day one. We provide a Testing Roadmap that identifies high-impact opportunities, trains your team on test design and statistical rigor, and implements Target so your team can launch tests in days, not weeks. Our partnership with Adobe means we get early access to new features like Auto-Allocate and Auto-Target.</p>
+    </div>
+
+    <!-- Sub-questions -->
+    <div class="sub-tree">
+      <div class="question-node">
+        <div class="question-header" onclick="toggle(this)">
+          <div class="icon client">Q</div>
+          <h3>"What's the difference between A/B testing, MVT, and Automated Personalization?"</h3>
+          <span class="tag technical">Technical</span>
+          <svg class="chevron" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z"/></svg>
+        </div>
+        <div class="question-body">
+          <div class="answer-block">
+            <h4>Recommended Response</h4>
+            <p><strong>A/B testing</strong> compares two versions of a page or element (original vs. variant) — simple, fast, easy to understand, best for testing one big change. <strong>MVT (multivariate testing)</strong> tests multiple elements simultaneously (e.g., headline + image + button color all at once) — more powerful if you have high traffic, but takes longer to reach significance. <strong>Automated Personalization</strong> uses Adobe Sensei machine learning to show each visitor the unique combination of elements most likely to convert for them — it learns from every visitor and continuously improves. AP is the most sophisticated but requires sufficient traffic to train the model effectively.</p>
+          </div>
+          <div class="pop-value">
+            <h4>POP's Value</h4>
+            <p>POP runs a Testing Assessment that analyzes your traffic levels, business goals, and competitive landscape to recommend the right testing methodology for your situation. We help you start with A/B tests to build organizational confidence, then graduate to AP as your traffic and sophistication grow.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="question-node">
+        <div class="question-header" onclick="toggle(this)">
+          <div class="icon client">Q</div>
+          <h3>"Do we need a separate testing tool if we already have Google Optimize or Optimizely?"</h3>
+          <span class="tag objection">Objection</span>
+          <svg class="chevron" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z"/></svg>
+        </div>
+        <div class="question-body">
+          <div class="answer-block">
+            <h4>Recommended Response</h4>
+            <p>Not necessarily — but there are compelling reasons to consider Target if you're an Adobe customer. Target is built natively into the Adobe Experience Cloud, which means test results flow directly into Adobe Analytics for reporting, audiences from Real-Time CDP and Adobe Audience Manager automatically populate in Target for precise targeting, and your test data is unified with all your other customer data. If you're using Google Analytics or Optimizely in a vacuum, you're missing the opportunity to combine test insights with behavioral, profile, and predictive data. That said, if you're fully committed to Google or Optimizely and they're working well, replacing them is a lower priority than building your overall testing culture.</p>
+          </div>
+          <div class="redirect-block">
+            <h4>Redirect the Conversation</h4>
+            <p>"Are you using Analytics, AEP, or Real-Time CDP today? If so, how are you currently bridging test results back into your CDP for audience insights? That integration gap is often where real value is being left on the table."</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- Q2 -->
+<div class="tree-root" data-q>
+<div class="question-node">
+  <div class="question-header" onclick="toggle(this)">
+    <div class="icon client">Q</div>
+    <h3>"How does Adobe Sensei power the AI-driven personalization in Target?"</h3>
+    <span class="tag technical">Technical</span>
+    <svg class="chevron" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z"/></svg>
+  </div>
+  <div class="question-body">
+    <div class="answer-block">
+      <h4>Recommended Response</h4>
+      <p>Adobe Sensei is Adobe's AI/ML engine, and it powers three key features in Target: <strong>Auto-Allocate</strong> learns which variant is winning as traffic comes in and automatically increases traffic to the winner; <strong>Auto-Target</strong uses machine learning to predict which experience each visitor will respond to best and adapts in real time; and <strong>Automated Personalization</strong takes it further by testing combinations of multiple elements and learning which unique combo converts best for each visitor segment. Sensei uses ensemble learning — combining multiple algorithms — to make smarter predictions faster than traditional statistical testing, so you reach statistical significance and ROI faster.</p>
+    </div>
+    <div class="redirect-block">
+      <h4>Redirect the Conversation</h4>
+      <p>"The power of Sensei is that it replaces manual statistical analysis and gut-feel decisions with algorithm-driven optimization. How much time does your team currently spend analyzing test results and deciding what to implement next? That's time Sensei saves you."</p>
+    </div>
+
+    <!-- Sub-questions -->
+    <div class="sub-tree">
+      <div class="question-node">
+        <div class="question-header" onclick="toggle(this)">
+          <div class="icon client">Q</div>
+          <h3>"What is Auto-Target and how does it decide which experience to show?"</h3>
+          <span class="tag technical">Technical</span>
+          <svg class="chevron" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z"/></svg>
+        </div>
+        <div class="question-body">
+          <div class="answer-block">
+            <h4>Recommended Response</h4>
+            <p>Auto-Target uses machine learning to predict which experience each individual visitor is most likely to convert on, based on their profile attributes (location, device, new vs. returning, behavioral data from AEP/RT-CDP) and real-time behavior. It requires you to define 2–5 distinct experiences upfront, then Sensei learns which visitor types perform best with which experience. It's faster than Automated Personalization because you're choosing the experiences manually, but it's smarter than A/B testing because the algorithm continuously improves its predictions. Auto-Target typically requires 2–4 weeks of training data before reaching peak performance, and you need enough traffic to build a statistically sound model.</p>
+          </div>
+          <div class="pop-value">
+            <h4>POP's Value</h4>
+            <p>POP helps you design the right number and type of Auto-Target experiences for your use case. We've learned that 2–4 experiences usually performs better than 10+ because Sensei has clearer patterns to learn from. We also run pilot tests to validate traffic assumptions before committing to an Auto-Target campaign.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="question-node">
+        <div class="question-header" onclick="toggle(this)">
+          <div class="icon client">Q</div>
+          <h3>"How does Automated Personalization differ from rules-based targeting?"</h3>
+          <span class="tag technical">Technical</span>
+          <svg class="chevron" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z"/></svg>
+        </div>
+        <div class="question-body">
+          <div class="answer-block">
+            <h4>Recommended Response</h4>
+            <p><strong>Rules-based targeting</strong> uses manual logic that you write: "If visitor is from California AND device is mobile AND new visitor THEN show experience A." It's predictable and easy to understand, but it requires you to know all the rules upfront and manually update them when conditions change. <strong>Automated Personalization</strong> tests different content elements (headlines, images, calls-to-action, offers) and uses Sensei to automatically discover which combinations convert best for different visitor segments — no manual rules required. AP learns continuously and adapts without human intervention. Rules are good for known customer segments you've already identified; AP is better when you want to discover hidden patterns and continuously optimize.</p>
+          </div>
+          <div class="pop-value">
+            <h4>POP's Value</h4>
+            <p>POP recommends a hybrid approach: start with rules-based targeting for your known, high-value segments (VIP customers, repeat buyers, location-based cohorts), then layer Automated Personalization on top for discovery and continuous improvement. We've found this combination yields faster ROI than AP alone because you're immediately driving lift for your best customers while the algorithm works in the background.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- Q3 -->
+<div class="tree-root" data-q>
+<div class="question-node">
+  <div class="question-header" onclick="toggle(this)">
+    <div class="icon client">Q</div>
+    <h3>"How does Adobe Target work with AEP and Real-Time CDP profiles?"</h3>
+    <span class="tag technical">Technical</span>
+    <svg class="chevron" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z"/></svg>
+  </div>
+  <div class="question-body">
+    <div class="answer-block">
+      <h4>Recommended Response</h4>
+      <p>Target is built to activate data from AEP and Real-Time CDP in real time. When a visitor lands on your website, Target calls the AEP edge network to fetch their unified customer profile — all their attributes (loyalty tier, past purchase history, propensity scores, lifecycle stage), behavioral data, and segment membership from Real-Time CDP. Target uses that rich profile to make personalization decisions instantly. So instead of testing generic "version A vs. version B," you can test "personalized experience for high-LTV customers vs. experience for price-sensitive shoppers." The entire exchange happens in milliseconds, and the decisions are fed back into AEP for unified reporting and attribution.</p>
+    </div>
+    <div class="redirect-block">
+      <h4>Redirect the Conversation</h4>
+      <p>"Are you currently using AEP or Real-Time CDP? If so, what customer segments or audiences have you defined that aren't being used for personalization yet? That's low-hanging fruit we can activate in Target immediately."</p>
+    </div>
+    <div class="pop-value">
+      <h4>POP's Value</h4>
+      <p>POP's Data Architecture team ensures your AEP schema and Real-Time CDP segments are designed with Target use cases in mind. We create reusable audience definitions and attributes that enable personalization while maintaining data governance. We also set up the edge decisioning infrastructure so Target and AEP sync seamlessly with sub-100ms latency.</p>
+    </div>
+
+    <!-- Sub-questions -->
+    <div class="sub-tree">
+      <div class="question-node">
+        <div class="question-header" onclick="toggle(this)">
+          <div class="icon client">Q</div>
+          <h3>"Can we use our unified CDP segments for personalization?"</h3>
+          <span class="tag technical">Technical</span>
+          <svg class="chevron" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z"/></svg>
+        </div>
+        <div class="question-body">
+          <div class="answer-block">
+            <h4>Recommended Response</h4>
+            <p>Absolutely — that's the whole point. Any segment you've built in Real-Time CDP is immediately available in Target for personalization decisions. If you've defined a "high-value customer" segment using purchase history, RFM scores, and engagement signals, Target can use that segment to show those customers your premium offer. If you've built propensity-to-churn segments, Target can personalize with retention offers for at-risk customers. The CDP becomes your personalization engine, and Target becomes the delivery vehicle. No manual data exports or audience uploads required — it's real-time and continuous.</p>
+          </div>
+          <div class="pop-value">
+            <h4>POP's Value</h4>
+            <p>POP's Strategy & Planning service identifies the highest-impact segments to prioritize for personalization. We run a Segment Audit that evaluates which segments have the greatest revenue potential and quickest path to measurable lift. We then design Target campaigns that activate those segments and measure the incremental impact on each segment's conversion rate and AOV.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="question-node">
+        <div class="question-header" onclick="toggle(this)">
+          <div class="icon client">Q</div>
+          <h3>"How fast is the edge-based decisioning?"</h3>
+          <span class="tag technical">Technical</span>
+          <svg class="chevron" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z"/></svg>
+        </div>
+        <div class="question-body">
+          <div class="answer-block">
+            <h4>Recommended Response</h4>
+            <p>Target's edge decisioning runs on Adobe's edge network, which processes decisions in the region closest to the visitor — typically 50–100 milliseconds end-to-end for a personalization call. This means a visitor can hit your website, Target fetches their AEP profile, makes a personalization decision, and renders the right experience before the page finishes loading — all without noticeable latency. Compare that to traditional approaches where you'd batch-export segments and upload them to external tools (hours of delay), and you can see why edge decisioning is a game-changer for real-time personalization.</p>
+          </div>
+          <div class="pop-value">
+            <h4>POP's Value</h4>
+            <p>POP's Implementation team optimizes your Web SDK configuration to maximize edge decisioning performance. We tune cache settings, define the right attributes to fetch from AEP (you don't want to pull 1000 attributes per request), and run latency tests across geographies to ensure your visitors get sub-100ms response times globally.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- Q4 -->
+<div class="tree-root" data-q>
+<div class="question-node">
+  <div class="question-header" onclick="toggle(this)">
+    <div class="icon client">Q</div>
+    <h3>"What does a testing and personalization program look like in practice?"</h3>
+    <span class="tag value">Value</span>
+    <svg class="chevron" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z"/></svg>
+  </div>
+  <div class="question-body">
+    <div class="answer-block">
+      <h4>Recommended Response</h4>
+      <p>A mature testing and personalization program typically starts with foundational activities: (1) A Testing Charter that defines success metrics and governance (weekly standup, test approval process, statistical rigor requirements); (2) A Testing Roadmap prioritizing high-impact use cases based on traffic and revenue potential; (3) Monthly test cycles launching 4–8 tests in parallel across your key pages (homepage, category pages, checkout, post-purchase); (4) Weekly results reviews where you quickly identify winners, kill losers, and scale winners; (5) Personalization layers that activate segments and propensity models in parallel with testing; (6) Continuous analytics integration with CJA or Analytics to measure incremental impact beyond test metrics. Successful programs move at 50–100 tests per year and compound learning across campaigns.</p>
+    </div>
+    <div class="redirect-block">
+      <h4>Redirect the Conversation</h4>
+      <p>"Most organizations struggle with the operational side of testing — not the tool, but the process. Who would own the testing program? How would you decide which tests to run? What does your current workflow look like for going from idea to launch?"</p>
+    </div>
+
+    <!-- Sub-questions -->
+    <div class="sub-tree">
+      <div class="question-node">
+        <div class="question-header" onclick="toggle(this)">
+          <div class="icon client">Q</div>
+          <h3>"How do we build a testing roadmap?"</h3>
+          <span class="tag value">Value</span>
+          <svg class="chevron" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z"/></svg>
+        </div>
+        <div class="question-body">
+          <div class="answer-block">
+            <h4>Recommended Response</h4>
+            <p>Start by mapping your customer journey and identifying the highest-impact moments: where do most drop-offs occur? Which pages have the lowest conversion rates? Which pages drive the most revenue? Prioritize those for testing. Then define your test types: quick wins (CTA text, form fields) that ship in 1–2 weeks, medium-term experiments (new layouts, checkout flows) that run 2–4 weeks, and longer-term initiatives (full redesigns, recommendation engines) that might take 6–8 weeks. Build a rolling 12-week roadmap with 30% quick wins, 50% medium-term tests, and 20% moonshots. Update it monthly based on results. Most importantly, test the highest-traffic areas first — even small conversion lifts on high-traffic pages compound into big revenue numbers.</p>
+          </div>
+          <div class="pop-value">
+            <h4>POP's Value</h4>
+            <p>POP runs a Testing Discovery workshop where we analyze your traffic data, conversion funnels, and business goals to identify your top 20 testing opportunities. We quantify the expected lift and effort for each, then help you build a realistic 12-month roadmap. We also establish test governance and help you build internal buy-in so testing becomes part of your quarterly business rhythm, not an ad-hoc project.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="question-node">
+        <div class="question-header" onclick="toggle(this)">
+          <div class="icon client">Q</div>
+          <h3>"What kind of conversion lifts are realistic?"</h3>
+          <span class="tag value">Value</span>
+          <svg class="chevron" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z"/></svg>
+        </div>
+        <div class="question-body">
+          <div class="answer-block">
+            <h4>Recommended Response</h4>
+            <p>Conversion lift varies wildly by industry and the quality of your testing program, but realistic expectations: quick-win tests (CTA copy, form fields) typically see 2–5% lift, medium-complexity tests (page layout, checkout flow) see 5–15% lift, and sophisticated tests (full personalization with multiple segments) can see 10–30%+ lift. The first tests you run are often the biggest winners because you're fixing obvious usability issues. As you mature, lift naturally diminishes as you've already optimized the low-hanging fruit. For reference, a 5% conversion lift on $10M in annual digital revenue = $500K incremental revenue per year. Most of our clients target payback in 2–4 tests, which is highly achievable if you focus on high-traffic pages.</p>
+          </div>
+          <div class="pop-value">
+            <h4>POP's Value</h4>
+            <p>POP builds a Financial Impact Model during discovery that quantifies expected revenue from your testing program based on your baseline traffic, average order value, and industry benchmarks. We also establish metrics for ongoing Lift Tracking so you can measure cumulative impact across all tests month-over-month and demonstrate ROI to leadership.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- Q5 -->
+<div class="tree-root" data-q>
+<div class="question-node">
+  <div class="question-header" onclick="toggle(this)">
+    <div class="icon client">Q</div>
+    <h3>"We've tried A/B testing before and it didn't move the needle — why would this be different?"</h3>
+    <span class="tag objection">Objection</span>
+    <svg class="chevron" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z"/></svg>
+  </div>
+  <div class="question-body">
+    <div class="answer-block">
+      <h4>Recommended Response</h4>
+      <p>This is a really common concern — and usually the issue isn't testing itself; it's one of three things: (1) you tested the wrong things (e.g., minor copy changes instead of high-impact elements), (2) you didn't have enough traffic to reach statistical significance, or (3) you tested in isolation without connecting results to your larger data platform. Target solves for all three: it forces you to prioritize high-traffic, high-revenue pages; it scales faster because Sensei focuses traffic on winners instead of splitting evenly; and because Target is natively integrated with AEP and Real-Time CDP, you can instantly activate learnings into personalization and segment-based campaigns. You're no longer testing in a vacuum — every test directly feeds your personalization engine.</p>
+    </div>
+    <div class="redirect-block">
+      <h4>Redirect the Conversation</h4>
+      <p>"Can you tell me more about what didn't work last time? Was it the tool, the methodology, the prioritization, or the organizational process? Understanding exactly where it broke down will help us design a better approach this time."</p>
+    </div>
+
+    <!-- Sub-questions -->
+    <div class="sub-tree">
+      <div class="question-node">
+        <div class="question-header" onclick="toggle(this)">
+          <div class="icon client">Q</div>
+          <h3>"We don't have enough traffic for testing — is Target still useful?"</h3>
+          <span class="tag objection">Objection</span>
+          <svg class="chevron" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z"/></svg>
+        </div>
+        <div class="question-body">
+          <div class="answer-block">
+            <h4>Recommended Response</h4>
+            <p>Absolutely — in fact, low-traffic scenarios are exactly where Target shines. Instead of waiting 6 months to reach statistical significance with traditional A/B testing, you can use Auto-Target or Automated Personalization to activate learnings faster. Auto-Target requires less traffic because it uses machine learning to optimize allocation; you reach 80% of peak performance in 2–3 weeks instead of 12 weeks. Rule-based personalization lets you activate segments (e.g., show premium offer to loyalty members, discount offer to price-sensitive browsers) immediately without waiting for test significance. So "low traffic" doesn't mean "can't test" — it means "test smarter with Sensei."</p>
+          </div>
+          <div class="pop-value">
+            <h4>POP's Value</h4>
+            <p>POP runs a Traffic Analysis to identify your highest-traffic pages and segments, then helps you focus testing and personalization where you have sufficient data volume. We also recommend starting with rules-based personalization on lower-traffic pages (faster time-to-value) while building statistical power for A/B tests on your traffic sweet spots. This hybrid approach delivers near-immediate results while you build toward algorithmic optimization.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="question-node">
+        <div class="question-header" onclick="toggle(this)">
+          <div class="icon client">Q</div>
+          <h3>"How do we get executive buy-in for a personalization program?"</h3>
+          <span class="tag objection">Objection</span>
+          <svg class="chevron" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z"/></svg>
+        </div>
+        <div class="question-body">
+          <div class="answer-block">
+            <h4>Recommended Response</h4>
+            <p>Show them the numbers. A testing and personalization program typically pays for itself in 2–4 tests. If you're spending $200K on Target + implementation, and each test generates an average $100K in incremental revenue, you break even in 2 tests and have 48+ additional tests to run that year. Most executives respond to that math. Also frame it as competitive urgency: your competitors are testing and personalizing at scale; if you're not, you're losing market share. Finally, start small with a proof-of-concept: run 3–5 high-impact tests in Q1, prove the lift is real, build momentum. Executive buy-in is much easier once they've seen real results on their own business.</p>
+          </div>
+          <div class="pop-value">
+            <h4>POP's Value</h4>
+            <p>POP creates an Executive Business Case for every testing and personalization program we launch. We model the financial impact, benchmark against your industry, and establish clear quarterly KPIs tied to revenue. We then run Monthly Executive Reviews so your CFO/CEO sees the compounding value of the program. This visibility drives continued investment and resource allocation.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- Q6 -->
+<div class="tree-root" data-q>
+<div class="question-node">
+  <div class="question-header" onclick="toggle(this)">
+    <div class="icon client">Q</div>
+    <h3>"How does Target handle recommendations — like product or content recs?"</h3>
+    <span class="tag discovery">Discovery</span>
+    <svg class="chevron" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z"/></svg>
+  </div>
+  <div class="question-body">
+    <div class="answer-block">
+      <h4>Recommended Response</h4>
+      <p>Target includes Recommendations as a built-in feature powered by Adobe Sensei. You feed it your product catalog, user behavior (views, purchases, adds-to-cart), and optionally user attributes from AEP/Real-Time CDP, and Sensei automatically builds a collaborative filtering model that predicts which products each visitor is most likely to buy. You can deploy recommendations as a simple "Users like you also bought..." widget or as personalized product feeds that change by segment. Target Recommendations uses the same unified profile and edge network as the rest of Target, so recommendations are personalized by customer segment in real time. You can A/B test recommendation algorithms (content-based vs. collaborative filtering vs. trending) to see which drives the highest AOV.</p>
+    </div>
+    <div class="redirect-block">
+      <h4>Redirect the Conversation</h4>
+      <p>"Are you currently recommending products or content to visitors? What's your current engine — is it rules-based, proprietary ML, or a third-party tool? Let's talk about whether recommendations are a high-priority use case for you."</p>
+    </div>
+    <div class="pop-value">
+      <h4>POP's Value</h4>
+      <p>POP's Recommendations implementation includes catalog setup, behavioral data ingestion into AEP, and algorithm tuning. We run a Recommendation A/B test comparing different algorithms and placement strategies so you can measure the incremental lift to AOV. We've seen clients add 3–5% AOV lift just by switching from rules-based recs to Sensei-powered collaborative filtering.</p>
+    </div>
+
+    <!-- Sub-questions -->
+    <div class="sub-tree">
+      <div class="question-node">
+        <div class="question-header" onclick="toggle(this)">
+          <div class="icon client">Q</div>
+          <h3>"How does Recommendations compare to a custom-built engine?"</h3>
+          <span class="tag technical">Technical</span>
+          <svg class="chevron" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z"/></svg>
+        </div>
+        <div class="question-body">
+          <div class="answer-block">
+            <h4>Recommended Response</h4>
+            <p>Target Recommendations offers three big advantages: (1) It's pre-built — you don't need a data science team to implement it; you configure it in the Target UI and it works. A custom engine requires ongoing ML engineering resources. (2) It's optimized for real-time decisioning — Sensei learns from every interaction and updates recommendations instantly, whereas custom engines typically batch-retrain once per day or week. (3) It integrates natively with Target's testing infrastructure — you can instantly A/B test different recommendation algorithms or placements without engineering. Custom engines often live in isolation. That said, if you have very unique recommendation logic (e.g., you must exclude competitors' products, or recommendations depend on real-time inventory) or you've already invested heavily in a custom engine, stick with what works. But if you're starting from scratch or your current engine requires manual maintenance, Recommendations is faster and cheaper to deploy.</p>
+          </div>
+          <div class="pop-value">
+            <h4>POP's Value</h4>
+            <p>POP helps you evaluate whether a managed recommendation solution like Target Recommendations or a custom engine makes sense for your use case. We've found that 80% of clients are better served by Target Recommendations because the ROI is faster and the maintenance burden is lower. We design hybrid approaches where Target handles product recommendations and you maintain custom logic for content or offer recommendations if needed.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="question-node">
+        <div class="question-header" onclick="toggle(this)">
+          <div class="icon client">Q</div>
+          <h3>"Can we use Recommendations across channels, not just the website?"</h3>
+          <span class="tag technical">Technical</span>
+          <svg class="chevron" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z"/></svg>
+        </div>
+        <div class="question-body">
+          <div class="answer-block">
+            <h4>Recommended Response</h4>
+            <p>Target Recommendations is primarily designed for on-site delivery (web and mobile app), where you can render recommendations in real time via the Target JavaScript library or Mobile SDK. However, you can export recommendation data from Target into your unified AEP customer profiles, then use Journey Optimizer to activate those recommendations via email, push, SMS, or other channels. So the workflow is: Sensei generates recommendations on-site, learnings flow back into AEP, then JO reuses those insights for off-site personalization. It's not single-click cross-channel like it is on-site, but it's fully supported through the Adobe ecosystem.</p>
+          </div>
+          <div class="pop-value">
+            <h4>POP's Value</h4>
+            <p>POP designs your recommendations strategy to span on-site (immediate impact, high traffic) and off-site channels (email, push, CRM). We set up the data flows so Sensei's learnings from on-site behavior automatically feed into Journey Optimizer for off-channel personalization. This creates a virtuous cycle where each channel learns from and improves all others.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+</div>
+
+<div class="container">
+  <a href="index.html" class="nav-back">← Back to All Products</a>
+</div>
+
+<script>
+function toggle(header) {
+  const body = header.nextElementSibling;
+  const chevron = header.querySelector('.chevron');
+  body.classList.toggle('open');
+  chevron.classList.toggle('open');
+}
+function filterQuestions(query) {
+  const roots = document.querySelectorAll('[data-q]');
+  const q = query.toLowerCase();
+  roots.forEach(root => {
+    const text = root.textContent.toLowerCase();
+    root.style.display = text.includes(q) ? '' : 'none';
+  });
+}
+</script>
+</body>
+</html>

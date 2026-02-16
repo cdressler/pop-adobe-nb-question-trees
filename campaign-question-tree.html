@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>POP × Adobe Campaign — Question Tree</title>
+<style>
+  :root {
+    --pop-red: #E63946;
+    --pop-dark: #1D1D1D;
+    --pop-gray: #F8F8F8;
+    --pop-mid: #6B7280;
+    --pop-blue: #2563EB;
+    --pop-green: #059669;
+    --pop-amber: #D97706;
+    --radius: 10px;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--pop-gray); color: var(--pop-dark); line-height: 1.6; }
+  .header { background: var(--pop-dark); color: #fff; padding: 32px 40px; }
+  .header h1 { font-size: 28px; font-weight: 700; }
+  .header .subtitle { color: #aaa; font-size: 14px; margin-top: 4px; }
+  .header .product-badge { display: inline-block; background: var(--pop-red); color: #fff; padding: 4px 14px; border-radius: 20px; font-size: 12px; font-weight: 600; margin-top: 12px; letter-spacing: 0.5px; }
+  .intro { max-width: 960px; margin: 24px auto; padding: 0 24px; }
+  .intro p { color: var(--pop-mid); font-size: 14px; }
+  .container { max-width: 960px; margin: 0 auto; padding: 0 24px 60px; }
+  .tree-root { margin-bottom: 20px; }
+  .question-node { border: 1px solid #E5E7EB; border-radius: var(--radius); background: #fff; margin-bottom: 12px; overflow: hidden; transition: box-shadow 0.2s; }
+  .question-node:hover { box-shadow: 0 2px 12px rgba(0,0,0,0.06); }
+  .question-header { display: flex; align-items: center; padding: 16px 20px; cursor: pointer; user-select: none; gap: 12px; }
+  .question-header .icon { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; flex-shrink: 0; }
+  .question-header .icon.client { background: #DBEAFE; color: var(--pop-blue); }
+  .question-header .icon.response { background: #D1FAE5; color: var(--pop-green); }
+  .question-header .icon.redirect { background: #FEF3C7; color: var(--pop-amber); }
+  .question-header h3 { font-size: 15px; font-weight: 600; flex: 1; }
+  .question-header .tag { font-size: 11px; padding: 2px 10px; border-radius: 12px; font-weight: 600; flex-shrink: 0; }
+  .tag.discovery { background: #DBEAFE; color: var(--pop-blue); }
+  .tag.technical { background: #E0E7FF; color: #4338CA; }
+  .tag.objection { background: #FEE2E2; color: #B91C1C; }
+  .tag.value { background: #D1FAE5; color: #065F46; }
+  .tag.competitive { background: #FEF3C7; color: #92400E; }
+  .chevron { width: 20px; height: 20px; transition: transform 0.2s; flex-shrink: 0; color: #9CA3AF; }
+  .chevron.open { transform: rotate(90deg); }
+  .question-body { display: none; padding: 0 20px 20px 60px; }
+  .question-body.open { display: block; }
+  .answer-block { background: #F9FAFB; border-left: 3px solid var(--pop-green); padding: 16px; border-radius: 0 8px 8px 0; margin-bottom: 12px; }
+  .answer-block h4 { font-size: 13px; font-weight: 700; color: var(--pop-green); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .answer-block p, .answer-block li { font-size: 14px; color: #374151; }
+  .answer-block ul { padding-left: 18px; margin-top: 6px; }
+  .answer-block li { margin-bottom: 4px; }
+  .redirect-block { background: #FFFBEB; border-left: 3px solid var(--pop-amber); padding: 16px; border-radius: 0 8px 8px 0; margin-bottom: 12px; }
+  .redirect-block h4 { font-size: 13px; font-weight: 700; color: var(--pop-amber); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .redirect-block p, .redirect-block li { font-size: 14px; color: #374151; }
+  .redirect-block ul { padding-left: 18px; margin-top: 6px; }
+  .redirect-block li { margin-bottom: 4px; }
+  .pop-value { background: #EFF6FF; border-left: 3px solid var(--pop-blue); padding: 16px; border-radius: 0 8px 8px 0; margin-bottom: 12px; }
+  .pop-value h4 { font-size: 13px; font-weight: 700; color: var(--pop-blue); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .pop-value p, .pop-value li { font-size: 14px; color: #374151; }
+  .pop-value ul { padding-left: 18px; margin-top: 6px; }
+  .pop-value li { margin-bottom: 4px; }
+  /* Sub-questions (level 2) */
+  .sub-tree { margin-top: 16px; padding-left: 0; }
+  .sub-tree .question-node { border-color: #E5E7EB; background: #FAFAFA; }
+  .sub-tree .question-header { padding: 12px 16px; }
+  .sub-tree .question-header h3 { font-size: 14px; }
+  .sub-tree .question-body { padding: 0 16px 16px 52px; }
+  .nav-back { display: inline-block; margin: 24px 0 0; padding: 8px 20px; background: var(--pop-dark); color: #fff; text-decoration: none; border-radius: 6px; font-size: 13px; font-weight: 600; }
+  .nav-back:hover { background: #333; }
+  .search-bar { margin: 24px auto 0; max-width: 960px; padding: 0 24px; }
+  .search-bar input { width: 100%; padding: 12px 16px; border: 1px solid #D1D5DB; border-radius: 8px; font-size: 14px; outline: none; }
+  .search-bar input:focus { border-color: var(--pop-red); box-shadow: 0 0 0 3px rgba(230,57,70,0.1); }
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>Adobe Campaign</h1>
+  <div class="subtitle">POP Sales Question Tree — Conversation Guide</div>
+  <span class="product-badge">CAMPAIGN MANAGEMENT</span>
+</div>
+<div class="search-bar"><input type="text" id="search" placeholder="Search questions…" oninput="filterQuestions(this.value)"></div>
+<div class="intro"><p style="margin-top:16px">Use this guide when a prospect asks about Adobe Campaign. Each question includes a recommended response and conversation redirects to surface POP's value. Click any question to expand.</p></div>
+<div class="container">
+
+<!-- Q1 -->
+<div class="tree-root" data-q>
+<div class="question-node">
+  <div class="question-header" onclick="toggle(this)">
+    <div class="icon client">Q</div>
+    <h3>"What is Adobe Campaign and what makes it different from other email/marketing platforms?"</h3>
+    <span class="tag discovery">Discovery</span>
+    <svg class="chevron" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z"/></svg>
+  </div>
+  <div class="question-body">
+    <div class="answer-block">
+      <h4>Recommended Response</h4>
+      <p>Adobe Campaign is a unified campaign management platform that goes far beyond email. It orchestrates personalized customer experiences across email, SMS, push notifications, direct mail, and in-app messaging from a single interface. What sets Campaign apart is its visual workflow canvas, which lets non-technical marketers design complex, multi-wave, multi-channel campaigns with conditional logic and real-time decisioning — no coding required. It's also deeply integrated with Adobe Experience Platform, so you're building campaigns directly on top of unified customer profiles and can activate Real-Time CDP segments instantly.</p>
+    </div>
+    <div class="redirect-block">
+      <h4>Redirect the Conversation</h4>
+      <p>"Let me ask — today, how are you managing your marketing campaigns across different channels? Are you stitching together multiple tools, or do you have a dedicated platform for orchestration?"</p>
+    </div>
+    <div class="pop-value">
+      <h4>POP's Value</h4>
+      <p>POP's Launchpad for Campaign accelerators include pre-built workflow templates, channel configuration frameworks, and best-practice governance models that eliminate months of setup work. Our Strategy & Planning service helps you define your campaign operating model before implementation — ensuring Campaign becomes a true center of excellence for your organization, not just another tool in your stack.</p>
+    </div>
+
+    <!-- Sub-questions -->
+    <div class="sub-tree">
+      <div class="question-node">
+        <div class="question-header" onclick="toggle(this)">
+          <div class="icon client">Q</div>
+          <h3>"What channels does Campaign support beyond email?"</h3>
+          <span class="tag technical">Technical</span>
+          <svg class="chevron" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z"/></svg>
+        </div>
+        <div class="question-body">
+          <div class="answer-block">
+            <h4>Recommended Response</h4>
+            <p>Campaign is truly multi-channel. You can orchestrate SMS campaigns with delivery tracking, push notifications to mobile apps, direct mail campaigns with postal integration, in-app messaging, and of course email. You can also integrate with other channels via APIs and custom actions. The power is that all these channels are orchestrated from one workflow — so you can build a journey that sends an email, then if it's opened, triggers an SMS, and if the customer doesn't convert, adds them to a direct mail drop. That level of orchestration is what separates Campaign from single-channel email tools.</p>
+          </div>
+          <div class="pop-value">
+            <h4>POP's Value</h4>
+            <p>POP has built reusable connector libraries for SMS providers (Twilio, Sinch), push platforms, and postal vendors. We also help clients design multi-channel journeys that maximize impact while respecting channel preferences and frequency caps — so your customers experience coordinated outreach, not channel spam.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="question-node">
+        <div class="question-header" onclick="toggle(this)">
+          <div class="icon client">Q</div>
+          <h3>"What's the difference between Campaign Classic and Campaign v8?"</h3>
+          <span class="tag technical">Technical</span>
+          <svg class="chevron" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z"/></svg>
+        </div>
+        <div class="question-body">
+          <div class="answer-block">
+            <h4>Recommended Response</h4>
+            <p>Campaign Classic is the on-premise or managed services version that's been around for years. Campaign v8 is the modern, cloud-native evolution with a completely redesigned web-based UI, native integration with AEP and Real-Time CDP, and significantly improved performance at scale. Campaign v8 is where Adobe is investing — it has a friendlier interface, better API design, and tighter platform integration. If you're evaluating Campaign today, v8 is the clear recommendation. Classic is still supported but v8 represents the future.</p>
+          </div>
+          <div class="redirect-block">
+            <h4>Redirect the Conversation</h4>
+            <p>"If you move forward, we'd definitely recommend Campaign v8. Has your team evaluated cloud-native platforms before, or have you traditionally preferred on-premise deployments?"</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- Q2 -->
+<div class="tree-root" data-q>
+<div class="question-node">
+  <div class="question-header" onclick="toggle(this)">
+    <div class="icon client">Q</div>
+    <h3>"How does Adobe Campaign handle cross-channel orchestration?"</h3>
+    <span class="tag technical">Technical</span>
+    <svg class="chevron" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z"/></svg>
+  </div>
+  <div class="question-body">
+    <div class="answer-block">
+      <h4>Recommended Response</h4>
+      <p>Campaign's visual workflow canvas is the heart of orchestration. You drag-and-drop elements (audience segments, channel actions, decision nodes, waits, conditions) to build campaigns without code. Each workflow can span weeks, with multiple waves and decision branches based on customer behavior in real time. For example: send an email, wait 3 days, if not opened send SMS, if SMS is clicked show a unique offer on the web, if offer not redeemed in 7 days trigger a retargeting ad. Campaign v8's advanced query modeler lets you build complex audience logic directly in the workflow, so you're orchestrating with precision.</p>
+    </div>
+    <div class="redirect-block">
+      <h4>Redirect the Conversation</h4>
+      <p>"Today, how are you handling campaigns that span multiple channels and timeframes? Are you manually triggering different campaigns in different tools, or do you have automation in place?"</p>
+    </div>
+    <div class="pop-value">
+      <h4>POP's Value</h4>
+      <p>POP's Implementation service includes hands-on workflow design. We help you map complex customer journeys to Campaign's workflow model, troubleshoot multi-wave timing issues, and optimize channel sequencing for your specific use cases. We also provide Testing & Optimization services to A/B test workflows and continuously improve performance based on delivery and conversion metrics.</p>
+    </div>
+
+    <!-- Sub-questions -->
+    <div class="sub-tree">
+      <div class="question-node">
+        <div class="question-header" onclick="toggle(this)">
+          <div class="icon client">Q</div>
+          <h3>"How does the visual workflow canvas work?"</h3>
+          <span class="tag technical">Technical</span>
+          <svg class="chevron" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z"/></svg>
+        </div>
+        <div class="question-body">
+          <div class="answer-block">
+            <h4>Recommended Response</h4>
+            <p>It's a drag-and-drop interface where you build workflows like a flowchart. You start with a source (audience segment, trigger, list import), then add activities (send email, send SMS, wait, decision fork, audience composition). Each activity has simple configuration — no SQL or code required. Conditions are built visually — "if email opened, then take path A, else take path B." The canvas gives you full visibility into the campaign logic, so stakeholders can understand exactly what the campaign does. Under the hood, Campaign handles all the execution — scheduling, delivery, retry logic, and real-time decisioning across millions of recipients.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="question-node">
+        <div class="question-header" onclick="toggle(this)">
+          <div class="icon client">Q</div>
+          <h3>"Can we run multi-wave, multi-phase campaigns that span weeks?"</h3>
+          <span class="tag technical">Technical</span>
+          <svg class="chevron" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z"/></svg>
+        </div>
+        <div class="question-body">
+          <div class="answer-block">
+            <h4>Recommended Response</h4>
+            <p>Absolutely — that's one of Campaign's core strengths. You can build a single workflow that runs for weeks or months, managing timing at every step. You can include pauses, conditional waits ("wait until the customer visits the website"), and re-evaluation of audience rules between waves. This is especially powerful for nurture campaigns, onboarding sequences, and complex sales lifecycle orchestration. Campaign v8 can manage campaigns at massive scale — millions of profiles flowing through multi-wave workflows simultaneously with consistent performance.</p>
+          </div>
+          <div class="pop-value">
+            <h4>POP's Value</h4>
+            <p>POP helps design campaign timing and sequencing strategies that maximize conversion while respecting deliverability constraints. We use analytics to identify optimal wait times between waves and help you avoid campaign fatigue through frequency capping and audience suppression rules.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- Q3 -->
+<div class="tree-root" data-q>
+<div class="question-node">
+  <div class="question-header" onclick="toggle(this)">
+    <div class="icon client">Q</div>
+    <h3>"How does Campaign integrate with Real-Time CDP and AEP?"</h3>
+    <span class="tag technical">Technical</span>
+    <svg class="chevron" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z"/></svg>
+  </div>
+  <div class="question-body">
+    <div class="answer-block">
+      <h4>Recommended Response</h4>
+      <p>Campaign v8 is built on AEP. You can directly activate Real-Time CDP segments in Campaign workflows — no exports, no delays. When you select an audience source in a Campaign workflow, you can point to any segment defined in Real-Time CDP, and that segment membership evaluates in real time as the campaign runs. This means if a customer's segment status changes mid-campaign (e.g., they convert and move from "prospect" to "customer"), Campaign automatically respects that change. It's seamless, real-time, and eliminates the data latency issues that plague point-solution integrations.</p>
+    </div>
+    <div class="redirect-block">
+      <h4>Redirect the Conversation</h4>
+      <p>"Are you already on Adobe Experience Platform, or would Campaign be your entry point to AEP? That affects the phasing of your implementation."</p>
+    </div>
+    <div class="pop-value">
+      <h4>POP's Value</h4>
+      <p>POP has deep expertise in AEP-to-Campaign pipelines. If you don't yet have AEP, we can advise whether to implement AEP and RT-CDP first or start with Campaign and layer AEP foundations in. If you do have AEP, we help design segment strategies and audience composition models specifically optimized for Campaign activation.</p>
+    </div>
+
+    <!-- Sub-questions -->
+    <div class="sub-tree">
+      <div class="question-node">
+        <div class="question-header" onclick="toggle(this)">
+          <div class="icon client">Q</div>
+          <h3>"Can we use RT-CDP segments directly in Campaign?"</h3>
+          <span class="tag technical">Technical</span>
+          <svg class="chevron" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z"/></svg>
+        </div>
+        <div class="question-body">
+          <div class="answer-block">
+            <h4>Recommended Response</h4>
+            <p>Yes — that's the whole point of the integration. In Campaign v8, when you create a workflow and need to define an audience, you can browse all segments available in Real-Time CDP. Select a segment, and Campaign automatically activates that segment's membership in real time. This works for both scheduled campaigns and triggered campaigns. If you're running a triggered campaign based on a behavioral event, and that event changes a customer's segment status, the Campaign logic respects that change instantly.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="question-node">
+        <div class="question-header" onclick="toggle(this)">
+          <div class="icon client">Q</div>
+          <h3>"How does Campaign handle real-time vs. batch data?"</h3>
+          <span class="tag technical">Technical</span>
+          <svg class="chevron" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z"/></svg>
+        </div>
+        <div class="question-body">
+          <div class="answer-block">
+            <h4>Recommended Response</h4>
+            <p>Campaign v8 handles both seamlessly. Real-time data — like a customer's browse behavior or a purchase event — can trigger campaigns instantly via APIs and event streams. Batch data — like a daily audience export or a weekly segment refresh — can be scheduled as part of workflows. Campaign supports scheduled batch activation of audiences at specific intervals. You can also layer triggering on top of batch workflows, so a batch campaign runs daily but within each batch, individual customer journeys are triggered based on real-time events or behavioral conditions.</p>
+          </div>
+          <div class="pop-value">
+            <h4>POP's Value</h4>
+            <p>POP helps clients design data ingestion strategies that support Campaign's timing needs. We advise on when to use real-time triggers vs. scheduled workflows, how to balance streaming APIs with batch imports, and how to handle scenarios where real-time and batch data need to converge in a single campaign.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- Q4 -->
+<div class="tree-root" data-q>
+<div class="question-node">
+  <div class="question-header" onclick="toggle(this)">
+    <div class="icon client">Q</div>
+    <h3>"What about deliverability — we can't afford to have emails land in spam"</h3>
+    <span class="tag objection">Objection</span>
+    <svg class="chevron" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z"/></svg>
+  </div>
+  <div class="question-body">
+    <div class="answer-block">
+      <h4>Recommended Response</h4>
+      <p>Deliverability is built into Campaign from day one, not tacked on. Campaign includes IP reputation management, domain configuration, authentication setup (SPF, DKIM, DMARC), bounce handling, and complaint rate monitoring. The platform automatically suppresses addresses that consistently bounce or complain, and it supports frequency capping so you don't hammer the same person repeatedly. Campaign v8 also integrates with deliverability data from Adobe's wider customer base, so you benefit from industry intelligence about what works and what doesn't. You also get detailed delivery tracking and reporting, so you can monitor inbox placement rates by ISP and adjust tactics accordingly.</p>
+    </div>
+    <div class="redirect-block">
+      <h4>Redirect the Conversation</h4>
+      <p>"Deliverability is a shared responsibility — it depends on your data quality, sending practices, and the platform. Do you have a dedicated person or team managing email reputation today, or is that spread across your marketing and IT teams?"</p>
+    </div>
+    <div class="pop-value">
+      <h4>POP's Value</h4>
+      <p>POP offers a Deliverability Optimization service that includes IP warming planning, authentication setup, and best-practice review. We help you establish sending domains, design ramp-up schedules to build reputation safely, and implement deliverability monitoring practices. Our Data Architecture team also helps ensure your subscriber lists are clean and compliant from the start.</p>
+    </div>
+
+    <!-- Sub-questions -->
+    <div class="sub-tree">
+      <div class="question-node">
+        <div class="question-header" onclick="toggle(this)">
+          <div class="icon client">Q</div>
+          <h3>"How does IP warming work when migrating to Campaign?"</h3>
+          <span class="tag technical">Technical</span>
+          <svg class="chevron" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z"/></svg>
+        </div>
+        <div class="question-body">
+          <div class="answer-block">
+            <h4>Recommended Response</h4>
+            <p>IP warming is a phased approach where you gradually increase email volume from a new IP address to build reputation with ISPs. Typically you start with a small number of your most engaged subscribers (open rates >50%), then incrementally expand to larger segments over 4–6 weeks as the IP's reputation builds. Campaign can automate this using frequency rules and audience segmentation — you define a warming schedule, and Campaign respects it automatically. The key is patience and monitoring during the ramp-up phase, not trying to send your full volume on day one.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="question-node">
+        <div class="question-header" onclick="toggle(this)">
+          <div class="icon client">Q</div>
+          <h3>"What tools does Campaign provide for deliverability management?"</h3>
+          <span class="tag technical">Technical</span>
+          <svg class="chevron" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z"/></svg>
+        </div>
+        <div class="question-body">
+          <div class="answer-block">
+            <h4>Recommended Response</h4>
+            <p>Campaign v8 includes: (1) Suppression lists for opted-out, bounced, or complained addresses; (2) Frequency capping rules to limit sends per recipient; (3) ISP-specific bounce handling that classifies hard bounces vs. soft bounces; (4) Delivery tracking that shows exactly which ISPs received your mail and whether it hit the inbox, spam folder, or bounced; (5) A/B testing for subject lines and content to optimize open rates; and (6) Integration with external list validation services. You also get detailed reporting on open rates, click rates, bounce rates, and complaint rates segmented by ISP, domain, and campaign type.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- Q5 -->
+<div class="tree-root" data-q>
+<div class="question-node">
+  <div class="question-header" onclick="toggle(this)">
+    <div class="icon client">Q</div>
+    <h3>"How does Campaign compare to Salesforce Marketing Cloud?"</h3>
+    <span class="tag competitive">Competitive</span>
+    <svg class="chevron" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z"/></svg>
+  </div>
+  <div class="question-body">
+    <div class="answer-block">
+      <h4>Recommended Response</h4>
+      <p>Both are enterprise marketing automation platforms, but they differ in approach. Salesforce Marketing Cloud is deeply tied to the Salesforce ecosystem — it's designed for teams already committed to Salesforce CRM. Adobe Campaign is a standalone platform that integrates with any CRM or CDP. Campaign's workflow canvas is arguably more flexible and visual, and if you're on AEP, Campaign's native integration with unified profiles and Real-Time CDP is unbeatable. Salesforce Marketing Cloud has stronger Salesforce CRM alignment but weaker integration with non-Salesforce data sources. The choice depends on your CRM strategy and broader Adobe/Salesforce ecosystem commitments.</p>
+    </div>
+    <div class="redirect-block">
+      <h4>Redirect the Conversation</h4>
+      <p>"Are you more committed to Salesforce as your CRM, or are you open to a best-of-breed approach where marketing and CRM might be separate? That's the key decision point."</p>
+    </div>
+    <div class="pop-value">
+      <h4>POP's Value</h4>
+      <p>POP has expertise in both Adobe and Salesforce. We can do an objective comparison based on your specific requirements, CRM architecture, and desired activation use cases. We've also helped clients integrate Campaign with Salesforce CRM using APIs and middleware — so it's not Campaign vs. Salesforce, it's Campaign plus Salesforce.</p>
+    </div>
+
+    <!-- Sub-questions -->
+    <div class="sub-tree">
+      <div class="question-node">
+        <div class="question-header" onclick="toggle(this)">
+          <div class="icon client">Q</div>
+          <h3>"What about Braze or Iterable — newer platforms seem more modern"</h3>
+          <span class="tag competitive">Competitive</span>
+          <svg class="chevron" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z"/></svg>
+        </div>
+        <div class="question-body">
+          <div class="answer-block">
+            <h4>Recommended Response</h4>
+            <p>Braze and Iterable are focused on customer engagement and are quite good at what they do. But they're primarily oriented toward mobile-first, app-based engagement. If your business is web, email, and retail-centric, they're not as strong. Campaign v8 is a true multi-channel platform with enterprise-grade orchestration, and it's backed by the entire Adobe Experience Cloud ecosystem — Analytics, Target, AEP, RT-CDP. If you're already on Adobe products or considering them, Campaign's native integration delivers way more value than bolting on a third-party tool. The "modern" factor matters, but so does ecosystem fit and total cost of ownership.</p>
+          </div>
+          <div class="pop-value">
+            <h4>POP's Value</h4>
+            <p>POP can run a full platform evaluation that scores Campaign, Braze, Iterable, and others against your specific use cases, integration requirements, and budget constraints. We help you understand not just feature parity but total cost of ownership when you factor in implementation, data pipeline, and ongoing support.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="question-node">
+        <div class="question-header" onclick="toggle(this)">
+          <div class="icon client">Q</div>
+          <h3>"We're a Salesforce CRM shop — does Campaign still make sense?"</h3>
+          <span class="tag competitive">Competitive</span>
+          <svg class="chevron" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z"/></svg>
+        </div>
+        <div class="question-body">
+          <div class="answer-block">
+            <h4>Recommended Response</h4>
+            <p>Absolutely. Salesforce CRM and Adobe Campaign actually complement each other very well. Salesforce excels at managing sales processes and customer accounts, while Campaign excels at orchestrating customer experiences and managing the marketing funnel. You can keep all your account and deal data in Salesforce, sync key attributes to Campaign via APIs, and then run campaigns in Campaign with unified Salesforce + behavioral data. Many of our largest clients run exactly this model — Salesforce for sales, Campaign for marketing orchestration. It's not an either/or decision.</p>
+          </div>
+          <div class="pop-value">
+            <h4>POP's Value</h4>
+            <p>POP has built dozens of Salesforce-to-Campaign integrations. We design data synchronization frameworks that keep Salesforce as the system of record for account/contact data while Campaign serves as the orchestration engine. We also help define clean handoff processes between sales and marketing so leads flow smoothly and data stays synchronized.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- Q6 -->
+<div class="tree-root" data-q>
+<div class="question-node">
+  <div class="question-header" onclick="toggle(this)">
+    <div class="icon client">Q</div>
+    <h3>"What does a Campaign implementation look like and what's the timeline?"</h3>
+    <span class="tag objection">Objection</span>
+    <svg class="chevron" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z"/></svg>
+  </div>
+  <div class="question-body">
+    <div class="answer-block">
+      <h4>Recommended Response</h4>
+      <p>A typical Campaign implementation includes: (1) Platform setup and configuration — domains, channels, authentication, governance rules; (2) Data architecture — designing how customer and behavioral data flows into Campaign, whether from a CRM, CDP, or data warehouse; (3) Workflow design and template creation — building your standard campaign templates and orchestration patterns; (4) Content personalization and dynamic content setup — enabling variable content based on customer attributes; (5) Testing and launch. Timeline varies based on complexity, but a phased approach typically delivers an MVP in 8–12 weeks with core channels and use cases, then expands from there. We see successful deployments that start with email and expand to SMS and push as confidence grows.</p>
+    </div>
+    <div class="redirect-block">
+      <h4>Redirect the Conversation</h4>
+      <p>"What's your timeline for wanting to go live? And what's your first priority — getting email orchestration right, or do you need multi-channel from day one?"</p>
+    </div>
+    <div class="pop-value">
+      <h4>POP's Value</h4>
+      <p>POP's Launchpad for Campaign includes pre-built configuration templates, standard workflow libraries, and governance frameworks that compress typical timelines by 40–60%. Our phased approach means you launch core functionality in 8–10 weeks and continuously expand. We also include structured knowledge transfer — your team gradually takes over as the deployment progresses, so by launch you're ready to run the platform independently. Our Training & Enablement program is tailored to your actual implementation, not generic platform training.</p>
+    </div>
+
+    <!-- Sub-questions -->
+    <div class="sub-tree">
+      <div class="question-node">
+        <div class="question-header" onclick="toggle(this)">
+          <div class="icon client">Q</div>
+          <h3>"What about the learning curve for our team?"</h3>
+          <span class="tag objection">Objection</span>
+          <svg class="chevron" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z"/></svg>
+        </div>
+        <div class="question-body">
+          <div class="answer-block">
+            <h4>Recommended Response</h4>
+            <p>Campaign v8's visual interface is pretty approachable — marketers can learn to design and launch simple campaigns in a few days. The learning curve gets steeper for advanced workflow logic, audience composition, and SQL-based audience queries — that's where you need technical skills. The good news is you don't need everyone on your team to be an expert. You can have a core team of 2–3 power users who handle complex workflows, while broader marketing teams handle campaign execution and content. Campaign also includes strong community resources and documentation, plus integration with Adobe's training programs.</p>
+          </div>
+          <div class="pop-value">
+            <h4>POP's Value</h4>
+            <p>POP's Training & Enablement includes hands-on workshops tailored to your team's skill levels and your specific implementation. We deliver role-based training — administrators, workflow designers, marketers, and analysts each get training relevant to their role. We also provide ongoing enablement during the first 90 days post-launch through office hours, recorded walkthroughs, and customized documentation for your specific workflows and use cases.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="question-node">
+        <div class="question-header" onclick="toggle(this)">
+          <div class="icon client">Q</div>
+          <h3>"What ongoing support do we need post-launch?"</h3>
+          <span class="tag objection">Objection</span>
+          <svg class="chevron" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z"/></svg>
+        </div>
+        <div class="question-body">
+          <div class="answer-block">
+            <h4>Recommended Response</h4>
+            <p>Most organizations benefit from support during the first 90 days — troubleshooting issues, optimizing workflows, and validating data flows. After that, it depends on your team's capabilities and ambitions. If you're expanding into new channels, integrating new data sources, or running complex campaigns at large scale, ongoing support helps avoid costly mistakes. Adobe provides standard support, but many clients value having a partner for design reviews, performance optimization, and staying current with platform updates. Think of it like having an extended consultant on call rather than a full-time hire.</p>
+          </div>
+          <div class="pop-value">
+            <h4>POP's Value</h4>
+            <p>POP offers a managed Optimization Program where we provide ongoing strategic reviews, performance tuning, and capability expansion planning. We monitor your Campaign usage patterns, identify optimization opportunities, and help you evolve your orchestration strategy as your business needs change. Many clients find this more cost-effective than hiring dedicated internal resources.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+</div>
+
+<div class="container">
+  <a href="index.html" class="nav-back">← Back to All Products</a>
+</div>
+
+<script>
+function toggle(header) {
+  const body = header.nextElementSibling;
+  const chevron = header.querySelector('.chevron');
+  body.classList.toggle('open');
+  chevron.classList.toggle('open');
+}
+function filterQuestions(query) {
+  const roots = document.querySelectorAll('[data-q]');
+  const q = query.toLowerCase();
+  roots.forEach(root => {
+    const text = root.textContent.toLowerCase();
+    root.style.display = text.includes(q) ? '' : 'none';
+  });
+}
+</script>
+</body>
+</html>

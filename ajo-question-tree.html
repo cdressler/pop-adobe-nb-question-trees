@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>POP × Adobe Journey Optimizer (AJO) — Question Tree</title>
+<style>
+  :root {
+    --pop-red: #E63946;
+    --pop-dark: #1D1D1D;
+    --pop-gray: #F8F8F8;
+    --pop-mid: #6B7280;
+    --pop-blue: #2563EB;
+    --pop-green: #059669;
+    --pop-amber: #D97706;
+    --radius: 10px;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--pop-gray); color: var(--pop-dark); line-height: 1.6; }
+  .header { background: var(--pop-dark); color: #fff; padding: 32px 40px; }
+  .header h1 { font-size: 28px; font-weight: 700; }
+  .header .subtitle { color: #aaa; font-size: 14px; margin-top: 4px; }
+  .header .product-badge { display: inline-block; background: var(--pop-red); color: #fff; padding: 4px 14px; border-radius: 20px; font-size: 12px; font-weight: 600; margin-top: 12px; letter-spacing: 0.5px; }
+  .intro { max-width: 960px; margin: 24px auto; padding: 0 24px; }
+  .intro p { color: var(--pop-mid); font-size: 14px; }
+  .container { max-width: 960px; margin: 0 auto; padding: 0 24px 60px; }
+  .tree-root { margin-bottom: 20px; }
+  .question-node { border: 1px solid #E5E7EB; border-radius: var(--radius); background: #fff; margin-bottom: 12px; overflow: hidden; transition: box-shadow 0.2s; }
+  .question-node:hover { box-shadow: 0 2px 12px rgba(0,0,0,0.06); }
+  .question-header { display: flex; align-items: center; padding: 16px 20px; cursor: pointer; user-select: none; gap: 12px; }
+  .question-header .icon { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; flex-shrink: 0; }
+  .question-header .icon.client { background: #DBEAFE; color: var(--pop-blue); }
+  .question-header .icon.response { background: #D1FAE5; color: var(--pop-green); }
+  .question-header .icon.redirect { background: #FEF3C7; color: var(--pop-amber); }
+  .question-header h3 { font-size: 15px; font-weight: 600; flex: 1; }
+  .question-header .tag { font-size: 11px; padding: 2px 10px; border-radius: 12px; font-weight: 600; flex-shrink: 0; }
+  .tag.discovery { background: #DBEAFE; color: var(--pop-blue); }
+  .tag.technical { background: #E0E7FF; color: #4338CA; }
+  .tag.objection { background: #FEE2E2; color: #B91C1C; }
+  .tag.value { background: #D1FAE5; color: #065F46; }
+  .tag.competitive { background: #FEF3C7; color: #92400E; }
+  .chevron { width: 20px; height: 20px; transition: transform 0.2s; flex-shrink: 0; color: #9CA3AF; }
+  .chevron.open { transform: rotate(90deg); }
+  .question-body { display: none; padding: 0 20px 20px 60px; }
+  .question-body.open { display: block; }
+  .answer-block { background: #F9FAFB; border-left: 3px solid var(--pop-green); padding: 16px; border-radius: 0 8px 8px 0; margin-bottom: 12px; }
+  .answer-block h4 { font-size: 13px; font-weight: 700; color: var(--pop-green); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .answer-block p, .answer-block li { font-size: 14px; color: #374151; }
+  .answer-block ul { padding-left: 18px; margin-top: 6px; }
+  .answer-block li { margin-bottom: 4px; }
+  .redirect-block { background: #FFFBEB; border-left: 3px solid var(--pop-amber); padding: 16px; border-radius: 0 8px 8px 0; margin-bottom: 12px; }
+  .redirect-block h4 { font-size: 13px; font-weight: 700; color: var(--pop-amber); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .redirect-block p, .redirect-block li { font-size: 14px; color: #374151; }
+  .redirect-block ul { padding-left: 18px; margin-top: 6px; }
+  .redirect-block li { margin-bottom: 4px; }
+  .pop-value { background: #EFF6FF; border-left: 3px solid var(--pop-blue); padding: 16px; border-radius: 0 8px 8px 0; margin-bottom: 12px; }
+  .pop-value h4 { font-size: 13px; font-weight: 700; color: var(--pop-blue); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .pop-value p, .pop-value li { font-size: 14px; color: #374151; }
+  .pop-value ul { padding-left: 18px; margin-top: 6px; }
+  .pop-value li { margin-bottom: 4px; }
+  /* Sub-questions (level 2) */
+  .sub-tree { margin-top: 16px; padding-left: 0; }
+  .sub-tree .question-node { border-color: #E5E7EB; background: #FAFAFA; }
+  .sub-tree .question-header { padding: 12px 16px; }
+  .sub-tree .question-header h3 { font-size: 14px; }
+  .sub-tree .question-body { padding: 0 16px 16px 52px; }
+  .nav-back { display: inline-block; margin: 24px 0 0; padding: 8px 20px; background: var(--pop-dark); color: #fff; text-decoration: none; border-radius: 6px; font-size: 13px; font-weight: 600; }
+  .nav-back:hover { background: #333; }
+  .search-bar { margin: 24px auto 0; max-width: 960px; padding: 0 24px; }
+  .search-bar input { width: 100%; padding: 12px 16px; border: 1px solid #D1D5DB; border-radius: 8px; font-size: 14px; outline: none; }
+  .search-bar input:focus { border-color: var(--pop-red); box-shadow: 0 0 0 3px rgba(230,57,70,0.1); }
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>Adobe Journey Optimizer (AJO)</h1>
+  <div class="subtitle">POP Sales Question Tree — Conversation Guide</div>
+  <span class="product-badge">JOURNEY ORCHESTRATION</span>
+</div>
+<div class="search-bar"><input type="text" id="search" placeholder="Search questions…" oninput="filterQuestions(this.value)"></div>
+<div class="intro"><p style="margin-top:16px">Use this guide when a prospect asks about Adobe Journey Optimizer. Each question includes a recommended response and conversation redirects to surface POP's value. Click any question to expand.</p></div>
+<div class="container">
+
+<!-- Q1 -->
+<div class="tree-root" data-q>
+<div class="question-node">
+  <div class="question-header" onclick="toggle(this)">
+    <div class="icon client">Q</div>
+    <h3>"What is Journey Optimizer and how is it different from Campaign or our current ESP?"</h3>
+    <span class="tag discovery">Discovery</span>
+    <svg class="chevron" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z"/></svg>
+  </div>
+  <div class="question-body">
+    <div class="answer-block">
+      <h4>Recommended Response</h4>
+      <p>Adobe Journey Optimizer (AJO) is a purpose-built orchestration platform that designs, executes, and optimizes personalized customer journeys across every channel in real time. Unlike Campaign, which is a batch-focused marketing automation tool, or your current ESP, which typically handles email only, AJO is built on Adobe Experience Platform and orchestrates omnichannel experiences — email, SMS, push notifications, in-app messaging, web, and more — all triggered by real-time customer events and powered by unified customer profiles. Think of it as the difference between scheduling campaigns and orchestrating conversations.</p>
+    </div>
+    <div class="redirect-block">
+      <h4>Redirect the Conversation</h4>
+      <p>"Before we go deeper, can you walk me through how your current marketing workflows operate? Are you building journeys across channels today, or are you managing email, SMS, and other channels as separate initiatives?"</p>
+    </div>
+    <div class="pop-value">
+      <h4>POP's Value</h4>
+      <p>POP's <strong>Launchpad for AJO</strong> accelerator delivers journey templates, journey canvas best practices, and omnichannel orchestration frameworks that compress implementation timelines by 40–60%. We start with a Platform Assessment that evaluates your current ESP, maps high-value journey use cases, and produces a phased migration plan — so you can prove AJO's value in your first 8–10 weeks, not six months.</p>
+    </div>
+
+    <!-- Sub-questions -->
+    <div class="sub-tree">
+      <div class="question-node">
+        <div class="question-header" onclick="toggle(this)">
+          <div class="icon client">Q</div>
+          <h3>"Should we replace Campaign with AJO or run both?"</h3>
+          <span class="tag technical">Technical</span>
+          <svg class="chevron" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z"/></svg>
+        </div>
+        <div class="question-body">
+          <div class="answer-block">
+            <h4>Recommended Response</h4>
+            <p>Most clients migrate to AJO as their primary orchestration platform over 9–12 months. The good news is you don't have to do it all at once. A typical approach is: phase one targets your highest-value, real-time journeys in AJO (abandoned cart, welcome series, event-triggered campaigns), while Campaign continues handling batch-send use cases. As your team gets proficient with AJO and you see the performance lift from real-time orchestration, you gradually sunset Campaign workflows. Some organizations run both for 6–9 months to ensure business continuity.</p>
+          </div>
+          <div class="pop-value">
+            <h4>POP's Value</h4>
+            <p>POP's Implementation & Integration service includes a detailed Campaign-to-AJO migration plan that identifies which workflows should move first and manages the cutover process with zero business disruption. We've helped dozens of clients execute this transition smoothly.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="question-node">
+        <div class="question-header" onclick="toggle(this)">
+          <div class="icon client">Q</div>
+          <h3>"What channels does AJO support?"</h3>
+          <span class="tag technical">Technical</span>
+          <svg class="chevron" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z"/></svg>
+        </div>
+        <div class="question-body">
+          <div class="answer-block">
+            <h4>Recommended Response</h4>
+            <p>AJO natively orchestrates email, SMS, push notifications (iOS/Android), in-app messaging, web personalization, and custom channels via connectors. Every channel in a journey is rule-based and event-triggered — so a single customer journey can send an email on day one, a push notification when they open it, SMS at a specific time, and in-app messaging when they visit your website. You orchestrate all of it from one canvas instead of stitching together five different platforms.</p>
+          </div>
+          <div class="redirect-block">
+            <h4>Redirect the Conversation</h4>
+            <p>"Which channels are most important to your marketing strategy right now? And are you currently orchestrating cross-channel journeys, or are your channels operating independently?"</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- Q2 -->
+<div class="tree-root" data-q>
+<div class="question-node">
+  <div class="question-header" onclick="toggle(this)">
+    <div class="icon client">Q</div>
+    <h3>"How does the journey canvas work for building customer journeys?"</h3>
+    <span class="tag technical">Technical</span>
+    <svg class="chevron" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z"/></svg>
+  </div>
+  <div class="question-body">
+    <div class="answer-block">
+      <h4>Recommended Response</h4>
+      <p>AJO's visual journey canvas is the heart of the platform. You drag and drop journey activities (send email, send SMS, make a decision, wait for an event) onto a canvas and connect them with logic flows. Every step is visual and no-code — marketers don't need SQL or JavaScript to build sophisticated journeys. The canvas supports complex conditional logic (if customer is VIP, send premium offer; otherwise, send standard offer), audience eligibility rules, frequency capping, and multi-armed A/B testing — all designed intuitively so your team can iterate fast.</p>
+    </div>
+    <div class="redirect-block">
+      <h4>Redirect the Conversation</h4>
+      <p>"Can I ask about your current team structure? Who's actually building customer journeys today — your marketers, your technical team, or both?"</p>
+    </div>
+
+    <!-- Sub-questions -->
+    <div class="sub-tree">
+      <div class="question-node">
+        <div class="question-header" onclick="toggle(this)">
+          <div class="icon client">Q</div>
+          <h3>"Can non-technical marketers build journeys themselves?"</h3>
+          <span class="tag technical">Technical</span>
+          <svg class="chevron" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z"/></svg>
+        </div>
+        <div class="question-body">
+          <div class="answer-block">
+            <h4>Recommended Response</h4>
+            <p>Yes — that's the entire point. AJO's no-code canvas is designed so marketers with no technical background can build, test, and publish journeys independently. That said, complex use cases (like building custom audience segments or implementing complex decisioning logic) might benefit from technical support, but the day-to-day journey building is absolutely in the hands of marketers. Most of our clients see a dramatic shift where marketing teams go from waiting 4–6 weeks for technical resources to building and publishing journeys in hours.</p>
+          </div>
+          <div class="pop-value">
+            <h4>POP's Value</h4>
+            <p>POP's Training & Enablement program focuses on empowering your marketing team to own the AJO platform. We provide hands-on workshops, documented journey patterns for common use cases (abandoned cart, welcome, re-engagement), and ongoing support so your team builds confidence quickly.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="question-node">
+        <div class="question-header" onclick="toggle(this)">
+          <div class="icon client">Q</div>
+          <h3>"How does it handle decisioning — picking the right message at the right time?"</h3>
+          <span class="tag technical">Technical</span>
+          <svg class="chevron" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z"/></svg>
+        </div>
+        <div class="question-body">
+          <div class="answer-block">
+            <h4>Recommended Response</h4>
+            <p>AJO uses decision logic at every step. You can branch journeys based on customer attributes (segment membership, purchase history, engagement level), behavioral events (opened email, clicked link), or profile data (lifetime value, lifecycle stage). Additionally, AJO integrates with Adobe's Offer Decisioning engine, which AI-ranks the best offer for each customer in real time using machine learning models trained on your historical conversion data. So instead of showing every customer the same discount, Decisioning shows each customer the offer most likely to convert them based on their individual profile and behavior.</p>
+          </div>
+          <div class="redirect-block">
+            <h4>Redirect the Conversation</h4>
+            <p>"In your current journeys, how do you personalize what each customer sees? Are you currently using data-driven decisioning, or are most customers following the same path?"</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- Q3 -->
+<div class="tree-root" data-q>
+<div class="question-node">
+  <div class="question-header" onclick="toggle(this)">
+    <div class="icon client">Q</div>
+    <h3>"How does AJO handle real-time triggered messages vs. batch campaigns?"</h3>
+    <span class="tag technical">Technical</span>
+    <svg class="chevron" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z"/></svg>
+  </div>
+  <div class="question-body">
+    <div class="answer-block">
+      <h4>Recommended Response</h4>
+      <p>AJO handles both seamlessly, but they work differently. Real-time triggered journeys listen for an event (customer made a purchase, abandoned cart, visited a specific page) and send an immediate, personalized response within seconds. Batch campaigns send to a scheduled audience segment at a specific time. AJO excels at the triggered side — that's where the conversion uplift happens. Real-time abandoned cart messages have 10x higher ROI than batch promotions. AJO can also run batch-initiated journeys, where everyone in a segment enters a journey at a specific time and then follows personalized paths based on their interactions.</p>
+    </div>
+    <div class="redirect-block">
+      <h4>Redirect the Conversation</h4>
+      <p>"How much of your marketing volume today is event-triggered vs. scheduled campaigns? Understanding that ratio helps us estimate the potential uplift from real-time orchestration."</p>
+    </div>
+
+    <!-- Sub-questions -->
+    <div class="sub-tree">
+      <div class="question-node">
+        <div class="question-header" onclick="toggle(this)">
+          <div class="icon client">Q</div>
+          <h3>"Can you give us examples of real-time triggers?"</h3>
+          <span class="tag discovery">Discovery</span>
+          <svg class="chevron" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z"/></svg>
+        </div>
+        <div class="question-body">
+          <div class="answer-block">
+            <h4>Recommended Response</h4>
+            <p>Absolutely. Common real-time triggers include: purchase events (send order confirmation, then recommended products 24 hours later), cart abandonment (email within 1 hour, SMS at 24 hours), content engagement (visitor reads blog post on feature X, immediately shows in-app offer for that feature), browsing behavior (customer views product but doesn't buy within 4 hours, triggers retargeting), lifecycle events (customer's free trial ending, send upgrade offer), or inactivity (customer hasn't logged in for 30 days, send re-engagement campaign). The key is that AJO captures these events in real time and initiates journeys instantly, rather than waiting for a nightly batch job.</p>
+          </div>
+          <div class="pop-value">
+            <h4>POP's Value</h4>
+            <p>POP's Strategy & Planning service identifies your highest-impact trigger scenarios and models the expected conversion uplift. We've seen clients achieve 15–40% performance improvements just by shifting from batch to event-triggered journeys. Our team helps you prioritize which triggers to implement first.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="question-node">
+        <div class="question-header" onclick="toggle(this)">
+          <div class="icon client">Q</div>
+          <h3>"What about frequency capping and message fatigue?"</h3>
+          <span class="tag objection">Objection</span>
+          <svg class="chevron" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z"/></svg>
+        </div>
+        <div class="question-body">
+          <div class="answer-block">
+            <h4>Recommended Response</h4>
+            <p>AJO has sophisticated frequency management built in. You can set rules like "max 3 emails per week," "wait 2 hours between push notifications," or "suppress if customer received more than 5 messages this month across all channels." Frequency caps are evaluated in real time as journeys execute, so a customer who's already received their weekly email limit won't get another one, even if they trigger a new journey. You can also use suppression rules based on engagement (suppress inactive users), business logic (don't message during support tickets), or explicit preference data. This prevents burnout while maximizing delivery for the messages that matter.</p>
+          </div>
+          <div class="redirect-block">
+            <h4>Redirect the Conversation</h4>
+            <p>"What's your current frequency strategy? Are you capping messages manually, or are different teams sending independently and potentially over-messaging customers?"</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- Q4 -->
+<div class="tree-root" data-q>
+<div class="question-node">
+  <div class="question-header" onclick="toggle(this)">
+    <div class="icon client">Q</div>
+    <h3>"What kind of content personalization can AJO deliver?"</h3>
+    <span class="tag discovery">Discovery</span>
+    <svg class="chevron" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z"/></svg>
+  </div>
+  <div class="question-body">
+    <div class="answer-block">
+      <h4>Recommended Response</h4>
+      <p>AJO supports rich personalization at scale. You can personalize email subject lines, body copy, product recommendations, imagery, and CTAs based on customer attributes (name, location, loyalty tier), behavior (purchase history, browsing), or predictive scores (propensity to churn, lifetime value). Additionally, AJO integrates with Adobe Generative AI capabilities to auto-generate subject lines, email variations, and content blocks — so instead of manually writing 10 versions of an email, you generate 10 variants and AJO learns which ones perform best. Everything is driven by unified profiles from AEP, so personalization is consistent across email, SMS, in-app, web, and other channels.</p>
+    </div>
+    <div class="redirect-block">
+      <h4>Redirect the Conversation</h4>
+      <p>"How personalized are your messages today? Are you doing basic segmentation, dynamic content blocks, or full send-time personalization?"</p>
+    </div>
+
+    <!-- Sub-questions -->
+    <div class="sub-tree">
+      <div class="question-node">
+        <div class="question-header" onclick="toggle(this)">
+          <div class="icon client">Q</div>
+          <h3>"How does the AI content generation work?"</h3>
+          <span class="tag technical">Technical</span>
+          <svg class="chevron" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z"/></svg>
+        </div>
+        <div class="question-body">
+          <div class="answer-block">
+            <h4>Recommended Response</h4>
+            <p>AJO's generative AI (powered by Adobe Sensei and foundation models) lets you input a brief — like "generate 10 email subject lines for a VIP customer about our new premium tier" — and the system produces variations in seconds. You can then A/B test which ones drive higher open rates, and AJO learns your brand voice over time. This is particularly powerful for scaling personalization when you don't have a dedicated copywriting team. The AI respects your brand guidelines and brand voice, and you maintain full control over which AI-generated variants go live.</p>
+          </div>
+          <div class="pop-value">
+            <h4>POP's Value</h4>
+            <p>POP's Testing & Optimization service helps you set up proper A/B testing frameworks so the AI can learn your winning patterns. We also provide brand training sessions to ensure the AI generates content aligned with your voice and values.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="question-node">
+        <div class="question-header" onclick="toggle(this)">
+          <div class="icon client">Q</div>
+          <h3>"Can we personalize across channels with the same content strategy?"</h3>
+          <span class="tag technical">Technical</span>
+          <svg class="chevron" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z"/></svg>
+        </div>
+        <div class="question-body">
+          <div class="answer-block">
+            <h4>Recommended Response</h4>
+            <p>Absolutely. Because AJO is built on unified customer profiles from AEP, the same personalization logic applies across all channels. A customer's VIP status, purchase history, and lifecycle stage inform their experience in email, SMS, push, web, and in-app messages simultaneously. You create one journey with one set of personalization rules, and each message channel adapts the format but keeps the same message strategy. This ensures consistency and prevents channel conflicts.</p>
+          </div>
+          <div class="redirect-block">
+            <h4>Redirect the Conversation</h4>
+            <p>"Are you currently managing separate email, SMS, and web campaigns with different segmentation logic? That's a common pain point AJO solves."</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- Q5 -->
+<div class="tree-root" data-q>
+<div class="question-node">
+  <div class="question-header" onclick="toggle(this)">
+    <div class="icon client">Q</div>
+    <h3>"We already have an email platform — why would we switch to AJO?"</h3>
+    <span class="tag objection">Objection</span>
+    <svg class="chevron" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z"/></svg>
+  </div>
+  <div class="question-body">
+    <div class="answer-block">
+      <h4>Recommended Response</h4>
+      <p>Your current ESP is probably great at email — but it's built for email only. AJO is built for journeys. The difference is that AJO orchestrates email, SMS, push, in-app, and web as a cohesive experience, triggered by customer events in real time, with unified decisioning and frequency management across channels. So instead of running an email campaign that's separate from your SMS campaign (which is separate from your push campaign), you run one journey that intelligently selects the best channel and message for each customer at each moment. That level of orchestration drives 30–50% higher conversion than channel-siloed approaches. Additionally, AJO is built on AEP unified profiles, so personalization is deeper and your data governance is stronger.</p>
+    </div>
+    <div class="redirect-block">
+      <h4>Redirect the Conversation</h4>
+      <p>"I understand your current platform is solid for email. But let me ask — if you could orchestrate SMS, push, and email as a single customer journey, triggered by real-time events, do you think that would improve conversion? That's the AJO value prop."</p>
+    </div>
+
+    <!-- Sub-questions -->
+    <div class="sub-tree">
+      <div class="question-node">
+        <div class="question-header" onclick="toggle(this)">
+          <div class="icon client">Q</div>
+          <h3>"What's the migration path from our current ESP?"</h3>
+          <span class="tag objection">Objection</span>
+          <svg class="chevron" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z"/></svg>
+        </div>
+        <div class="question-body">
+          <div class="answer-block">
+            <h4>Recommended Response</h4>
+            <p>A typical migration takes 12–16 weeks with the right partner, but you migrate in waves, not a big bang. Phase one: identify your top 5–10 journeys (by volume and revenue impact) and rebuild them in AJO over 8–10 weeks. Run them in parallel with your ESP to validate AJO's performance — you'll usually see 20–30% conversion improvements. Phase two: migrate the next tier of journeys and sunsetting the highest-risk ESP workflows. By month six, 80% of your journey volume is in AJO. You keep your ESP for legacy campaigns or compliance hold periods, then decommission it when you're confident in AJO. No hard cutoff, no customer impact.</p>
+          </div>
+          <div class="pop-value">
+            <h4>POP's Value</h4>
+            <p>POP's Accelerated Implementation service includes a detailed ESP-to-AJO migration plan with risk assessment, phasing, cutover testing, and rollback procedures. We own the migration risk, not you. We've successfully migrated hundreds of thousands of journey templates and segments from ESPs like Eloqua, Marketo, Klaviyo, and Sailthru into AJO without data loss.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="question-node">
+        <div class="question-header" onclick="toggle(this)">
+          <div class="icon client">Q</div>
+          <h3>"What about deliverability — can AJO match our current rates?"</h3>
+          <span class="tag objection">Objection</span>
+          <svg class="chevron" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z"/></svg>
+        </div>
+        <div class="question-body">
+          <div class="answer-block">
+            <h4>Recommended Response</h4>
+            <p>AJO's deliverability performance is typically equal to or better than most ESPs, especially for engaged segments. AJO works with major ISPs to maintain sender reputation, implements best practices like DKIM/SPF/DMARC authentication, and includes intelligent retry logic (e.g., soft bounces get re-tried after 24 hours). Additionally, because AJO's real-time orchestration targets engaged customers with timely, relevant messages, open rates and click-through rates tend to improve — which actually helps ISP reputation further. We've seen clients achieve 2–5% higher delivery rates in AJO because their messages are more relevant.</p>
+          </div>
+          <div class="redirect-block">
+            <h4>Redirect the Conversation</h4>
+            <p>"What's your current deliverability rate and open rate in your ESP? Let's benchmark that against expected AJO performance for the same segments."</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- Q6 -->
+<div class="tree-root" data-q>
+<div class="question-node">
+  <div class="question-header" onclick="toggle(this)">
+    <div class="icon client">Q</div>
+    <h3>"How does AJO integrate with the rest of the Adobe ecosystem?"</h3>
+    <span class="tag value">Value</span>
+    <svg class="chevron" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z"/></svg>
+  </div>
+  <div class="question-body">
+    <div class="answer-block">
+      <h4>Recommended Response</h4>
+      <p>AJO is purpose-built to work with the Adobe Experience Cloud. It's built on Adobe Experience Platform (AEP), which means it uses the same unified customer profiles, data governance, and identity resolution as Real-Time CDP, Target, Analytics, and Advertising. Journey data automatically flows to Adobe Customer Journey Analytics for attribution reporting, so you can prove the revenue impact of each journey. AJO also integrates with Offer Decisioning for AI-powered offer selection and with Adobe Content Fragment features for brand-compliant content at scale. This tight integration means your entire Adobe stack is coordinated around unified customer data — something you can't achieve with point solutions.</p>
+    </div>
+    <div class="redirect-block">
+      <h4>Redirect the Conversation</h4>
+      <p>"Are you already using other Adobe products like Target, Analytics, or Real-Time CDP? Understanding your current Adobe footprint will help us map the integration opportunities."</p>
+    </div>
+
+    <!-- Sub-questions -->
+    <div class="sub-tree">
+      <div class="question-node">
+        <div class="question-header" onclick="toggle(this)">
+          <div class="icon client">Q</div>
+          <h3>"Does it use the same profiles and segments as RT-CDP?"</h3>
+          <span class="tag technical">Technical</span>
+          <svg class="chevron" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z"/></svg>
+        </div>
+        <div class="question-body">
+          <div class="answer-block">
+            <h4>Recommended Response</h4>
+            <p>Yes — exactly the same. Real-Time CDP builds audience segments in AEP, and AJO reads those same profiles and segments in real time. So if RT-CDP says "customer is a VIP," AJO immediately applies that context to journey decisioning. This eliminates data synchronization delays and manual segment exports that plague point solutions. Segments are defined once in RT-CDP, used everywhere — AJO, Target, Analytics, advertising platforms. Changes to a segment definition automatically propagate to AJO within milliseconds.</p>
+          </div>
+          <div class="pop-value">
+            <h4>POP's Value</h4>
+            <p>POP's Data Architecture service designs the segment strategy and AEP schema so AJO can consume segments efficiently at scale. We optimize for performance so large segment evaluations (millions of customers) don't slow down journey execution.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="question-node">
+        <div class="question-header" onclick="toggle(this)">
+          <div class="icon client">Q</div>
+          <h3>"How do AJO and Target work together for web personalization?"</h3>
+          <span class="tag technical">Technical</span>
+          <svg class="chevron" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z"/></svg>
+        </div>
+        <div class="question-body">
+          <div class="answer-block">
+            <h4>Recommended Response</h4>
+            <p>AJO and Target complement each other perfectly. AJO orchestrates customer journeys (email, SMS, push sequences) and can include "send a web personalization offer" as a journey step — that triggers Target on your website. Alternatively, when a customer is on your website and Target shows them a personalization experience, that interaction becomes an event that AJO can listen for and trigger follow-up messaging. So a customer sees a Target offer on your homepage, AJO detects they viewed it, and automatically sends an SMS or email with the complementary offer 2 hours later. Web + messaging working in concert to drive conversion.</p>
+          </div>
+          <div class="redirect-block">
+            <h4>Redirect the Conversation</h4>
+            <p>"Are you currently running web personalization separately from your email/SMS messaging? AJO+Target integration means they'd be orchestrated together, not siloed."</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+</div>
+
+<div class="container">
+  <a href="index.html" class="nav-back">← Back to All Products</a>
+</div>
+
+<script>
+function toggle(header) {
+  const body = header.nextElementSibling;
+  const chevron = header.querySelector('.chevron');
+  body.classList.toggle('open');
+  chevron.classList.toggle('open');
+}
+function filterQuestions(query) {
+  const roots = document.querySelectorAll('[data-q]');
+  const q = query.toLowerCase();
+  roots.forEach(root => {
+    const text = root.textContent.toLowerCase();
+    root.style.display = text.includes(q) ? '' : 'none';
+  });
+}
+</script>
+</body>
+</html>
